@@ -11,21 +11,13 @@ interface ExtendUser extends User {
 }
 
 const sendVerificationCode = async (req: Request, res: Response) => {
-  const requiredFields = ["email", "password", "userName"];
+  const fields = ["email", "password", "userName"];
 
   // check data for each field in the body and validate format
-  for (const field of requiredFields) {
-    if (!req?.body?.[field]) {
-      return res.status(400).json({ message: `${field} field is empty.` });
-    } else if (
-      field === "userName" &&
-      !Helpers.nameRegex.test(req?.body?.[field])
-    ) {
-      return res
-        .status(400)
-        .json({ message: `Invalid name format in the ${field} field.` });
-    }
-  }
+  const fieldCheck = Helpers.requiredFields(req.body, fields);
+
+  if (!fieldCheck.success)
+    return res.status(400).json({ message: fieldCheck.message });
 
   // Validate email format
   if (!Helpers.emailRegex.test(req.body.email)) {
@@ -38,11 +30,11 @@ const sendVerificationCode = async (req: Request, res: Response) => {
   };
 
   // Check if there are any additional properties in the request body
-  if (Object.keys(rest).length > 0) {
-    return res.status(400).json({
-      message: "Additional properties in the request body are not allowed.",
-    });
-  }
+  const extraFields = Helpers.noExtraFields(rest);
+
+  if (!extraFields.success)
+    return res.status(400).json({ message: extraFields.message });
+
   // verification code
   const emailVCode = randomString({ length: 5 });
 
@@ -82,14 +74,7 @@ const sendVerificationCode = async (req: Request, res: Response) => {
     );
 
     //credentials for email transportation
-    const transport = nodemailer.createTransport({
-      host: "smtp.office365.com",
-      port: 578,
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL,
-      },
-    });
+    const transport = nodemailer.createTransport(Helpers.mailCredentials);
 
     //sends verification code to clients mail
     const msg = {
@@ -115,14 +100,12 @@ const sendVerificationCode = async (req: Request, res: Response) => {
 
 const register = async (req: Request, res: Response) => {
   if (req.method === "POST") {
-    const requiredFields = ["email", "code"];
-
+    const fields = ["email", "code"];
     // check data for each field in the body and validate format
-    for (const field of requiredFields) {
-      if (!req?.body?.[field]) {
-        return res.status(400).json({ message: `${field} field is empty.` });
-      }
-    }
+    const fieldCheck = Helpers.requiredFields(req.body, fields);
+
+    if (!fieldCheck.success)
+      return res.status(400).json({ message: fieldCheck.message });
 
     // Validate email format
     if (!Helpers.emailRegex.test(req.body.email)) {
@@ -130,16 +113,15 @@ const register = async (req: Request, res: Response) => {
     }
 
     // Get values from body
-    const { email, code, ...rest } = req.body as Partial<ExtendUser> & {
+    const { email, code: feCode, ...rest } = req.body as Partial<ExtendUser> & {
       [key: string]: any;
     };
 
     // Check if there are any additional properties in the request body
-    if (Object.keys(rest).length > 0) {
-      return res.status(400).json({
-        message: "Additional properties in the request body are not allowed.",
-      });
-    }
+    const extraFields = Helpers.noExtraFields(rest);
+
+    if (!extraFields.success)
+      return res.status(400).json({ message: extraFields.message });
 
     try {
       // Check if user already exists
@@ -154,9 +136,9 @@ const register = async (req: Request, res: Response) => {
       const code = await pool.query("SELECT * FROM limbo WHERE email = $1", [
         email,
       ]);
-
+      
       // checks if the code entered is valid
-      if (code.rows[0].code !== code)
+      if (code.rows[0].code !== feCode)
         return res.status(400).json("Incorrect Code.");
 
       const newUser = await pool.query(
@@ -171,14 +153,7 @@ const register = async (req: Request, res: Response) => {
       await pool.query("DELETE FROM limbo WHERE email = $1", [email]);
 
       //credentials for email transportation
-      const transport = nodemailer.createTransport({
-        host: "smtp.office365.com",
-        port: 578,
-        auth: {
-          user: process.env.MAIL_USER,
-          pass: process.env.MAIL,
-        },
-      });
+      const transport = nodemailer.createTransport(Helpers.mailCredentials);
 
       //Welcome Message
       const msg = {

@@ -4,7 +4,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE
     company_funds (
-        id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id TEXT PRIMARY KEY DEFAULT uuid_generate_v4 (),
         company_name TEXT NOT NULL,
         available_balance NUMERIC(17, 2) NOT NULL DEFAULT 0.00,
         currency VARCHAR(3) NOT NULL DEFAULT 'NGN',
@@ -24,7 +24,7 @@ CREATE TABLE
 
 CREATE TABLE
     clients (
-        id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id TEXT PRIMARY KEY DEFAULT uuid_generate_v4 (),
         first_name VARCHAR(255),
         last_name VARCHAR(255),
         user_name VARCHAR(255) UNIQUE NOT NULL,
@@ -43,5 +43,17 @@ CREATE TABLE
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
+CREATE TABLE
+    password_reset (
+        id TEXT PRIMARY KEY DEFAULT uuid_generate_v4 (),
+        email VARCHAR(255) UNIQUE NOT NULL REFERENCES clients (email),
+        reset_code VARCHAR(8) NOT NULL,
+        status VARCHAR(7) NOT NULL DEFAULT 'pending',
+        modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
 -- Indexes
-CREATE INDEX idx_client_id_clients ON client (id);
+CREATE INDEX idx_client_id_clients ON clients (id);
+CREATE INDEX idx_client_email_clients ON clients (email);
+CREATE INDEX idx_client_email_pw_reset ON password_reset (email);

@@ -34,7 +34,7 @@ const login = async (req: Request, res: Response) => {
 
   try {
     // checks for user in db
-    const user = await pool.query(`SELECT * FROM users WHERE email = $1 `, [
+    const user = await pool.query(`SELECT * FROM clients WHERE email = $1 `, [
       email,
     ]);
 
@@ -49,7 +49,7 @@ const login = async (req: Request, res: Response) => {
     );
 
     if (!passwordIsValid) {
-      return res.status(401).json({ message: "Invalid credentials." });
+      return res.status(401).json({ message: "Invalid password." });
     }
 
     const userData = {
