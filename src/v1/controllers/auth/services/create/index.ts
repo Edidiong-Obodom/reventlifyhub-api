@@ -78,7 +78,7 @@ const sendVerificationCode = async (req: Request, res: Response) => {
 
     await pool.query(
       "INSERT INTO limbo(email, code, status, password, user_name) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [email, emailVCode, "pending", hashedPassword, userName]
+      [email, emailVCode, "pending", hashedPassword, userName.toLowerCase()]
     );
 
     //credentials for email transportation
