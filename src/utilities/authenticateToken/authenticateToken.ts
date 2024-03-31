@@ -30,4 +30,4 @@ function authenticateToken(
   );
 }
 
-export = authenticateToken;
+export default authenticateToken;
