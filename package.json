@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "dist": "npm run build",
+    "dist": "npm install && npm run build",
     "start": "nodemon src/app.ts"
   },
   "keywords": [],
@@ -24,6 +24,7 @@
     "@types/nodemailer": "^6.4.14",
     "@types/pg": "^8.11.2",
     "@types/qrcode": "^1.5.5",
+    "@types/request-promise-native": "^1.0.21",
     "axios": "^1.6.8",
     "bcrypt": "^5.1.1",
     "cloudinary": "^2.0.3",
@@ -36,6 +37,7 @@
     "nodemailer": "^6.9.12",
     "pg": "^8.11.3",
     "qrcode": "^1.5.3",
-    "random-string": "^0.2.0"
+    "random-string": "^0.2.0",
+    "request-promise-native": "^1.0.9"
   }
 }
