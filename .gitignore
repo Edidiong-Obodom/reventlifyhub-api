@@ -1,0 +1,8 @@
+# dependencies
+/node_modules
+
+# secrets
+.env
+
+# Ignore dist folder
+dist/
