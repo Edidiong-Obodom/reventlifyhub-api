@@ -35,6 +35,12 @@ const sendVerificationCode = async (req: Request, res: Response) => {
   if (!extraFields.success)
     return res.status(400).json({ message: extraFields.message });
 
+  // Check if password length lesser than 8 characters
+  if (password.length < 8)
+    return res
+      .status(400)
+      .json({ message: "Password must have a minimum of 8 characters." });
+
   // verification code
   const emailVCode = randomString({ length: 5 });
 
@@ -113,7 +119,11 @@ const register = async (req: Request, res: Response) => {
     }
 
     // Get values from body
-    const { email, code: feCode, ...rest } = req.body as Partial<ExtendUser> & {
+    const {
+      email,
+      code: feCode,
+      ...rest
+    } = req.body as Partial<ExtendUser> & {
       [key: string]: any;
     };
 
@@ -136,7 +146,7 @@ const register = async (req: Request, res: Response) => {
       const code = await pool.query("SELECT * FROM limbo WHERE email = $1", [
         email,
       ]);
-      
+
       // checks if the code entered is valid
       if (code.rows[0].code !== feCode)
         return res.status(400).json("Incorrect Code.");

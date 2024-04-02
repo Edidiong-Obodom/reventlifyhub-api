@@ -97,6 +97,13 @@ const resetPW = async (req: Request, res: Response) => {
 
   if (!extraFields.success)
     return res.status(400).json({ message: extraFields.message });
+
+  // Check if password length lesser than 8 characters
+  if (password.length < 8)
+    return res
+      .status(400)
+      .json({ message: "Password must have a minimum of 8 characters." });
+
   try {
     // Check if user exists
     const user = await pool.query("SELECT * FROM clients WHERE email = $1", [
