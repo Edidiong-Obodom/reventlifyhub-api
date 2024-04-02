@@ -121,7 +121,7 @@ const resetPW = async (req: Request, res: Response) => {
 
     // checks if the code entered is valid
     if (code.rows[0].reset_code !== feCode)
-      return res.status(400).json("Incorrect Code.");
+      return res.status(400).json({ message: "Incorrect Code." });
 
     // hashes password
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -140,7 +140,7 @@ const resetPW = async (req: Request, res: Response) => {
       .json({ status: "Success", message: "Password reset successful" });
   } catch (error) {
     console.log(error);
-    return res.status(500).json("Internal server error");
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 

@@ -55,7 +55,7 @@ const sendVerificationCode = async (req: Request, res: Response) => {
 
     // action if user already exists
     if (user.rows.length !== 0)
-      return res.status(409).json("User already exists!");
+      return res.status(409).json({ message: "User already exists!" });
 
     // checks if username already exists
     const user_name = await pool.query(
@@ -69,7 +69,7 @@ const sendVerificationCode = async (req: Request, res: Response) => {
 
     // action if username already exists
     if (user_name.rows.length !== 0 || user_name_limbo.rows.length !== 0)
-      return res.status(409).json("Username already taken!");
+      return res.status(409).json({ message: "Username already taken!" });
 
     // hashes password
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -149,7 +149,7 @@ const register = async (req: Request, res: Response) => {
 
       // checks if the code entered is valid
       if (code.rows[0].code !== feCode)
-        return res.status(400).json("Incorrect Code.");
+        return res.status(400).json({ message: "Incorrect Code." });
 
       const newUser = await pool.query(
         `
