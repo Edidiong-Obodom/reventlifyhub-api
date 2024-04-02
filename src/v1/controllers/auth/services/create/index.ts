@@ -57,6 +57,16 @@ const sendVerificationCode = async (req: Request, res: Response) => {
     if (user.rows.length !== 0)
       return res.status(409).json({ message: "User already exists!" });
 
+    // checks if user name already exists
+    const userNameExists = await pool.query(
+      "SELECT * FROM clients WHERE user_name = $1",
+      [userName]
+    );
+
+    // action if user already exists
+    if (userNameExists.rows.length !== 0)
+      return res.status(409).json({ message: "User name already taken!" });
+
     // checks if username already exists
     const user_name = await pool.query(
       "SELECT * FROM clients WHERE user_name = $1",

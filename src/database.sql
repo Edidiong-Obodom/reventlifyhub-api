@@ -16,7 +16,7 @@ CREATE TABLE
         email VARCHAR(255) UNIQUE NOT NULL,
         code VARCHAR(8) NOT NULL,
         status VARCHAR(7) NOT NULL,
-        user_name VARCHAR(17) UNIQUE NOT NULL,
+        user_name VARCHAR(17) NOT NULL,
         password TEXT NOT NULL,
         modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
