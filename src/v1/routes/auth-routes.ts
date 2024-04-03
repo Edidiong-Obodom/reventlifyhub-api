@@ -5,6 +5,7 @@ import {
   resetPW,
   sendPWResetCode,
   sendVerificationCode,
+  verifyPwResetCode,
 } from "../controllers/auth/authController";
 
 const router = Router();
@@ -20,6 +21,9 @@ router.post("/login", login);
 
 // sends verification code for password reset
 router.post("/pw-reset-code", sendPWResetCode);
+
+// verifies password reset code
+router.post("/pw-reset-code/verify", verifyPwResetCode);
 
 // resets password
 router.post("/pw-reset", resetPW);

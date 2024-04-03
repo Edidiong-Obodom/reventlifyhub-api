@@ -68,8 +68,8 @@ const sendPWResetCode = async (req: Request, res: Response) => {
   }
 };
 
-const resetPW = async (req: Request, res: Response) => {
-  const fields = ["email", "password", "code"];
+export const verifyPwResetCode = async (req: Request, res: Response) => {
+  const fields = ["email", "code"];
 
   // check data for each field in the body and validate format
   const fieldCheck = Helpers.requiredFields(req.body, fields);
@@ -85,10 +85,73 @@ const resetPW = async (req: Request, res: Response) => {
   // Get values from body
   const {
     email,
-    password,
     code: feCode,
     ...rest
   } = req.body as Partial<User> & {
+    [key: string]: any;
+  };
+
+  // Check if there are any additional properties in the request body
+  const extraFields = Helpers.noExtraFields(rest);
+
+  if (!extraFields.success)
+    return res.status(400).json({ message: extraFields.message });
+  try {
+    // Check if user exists
+    const user = await pool.query("SELECT * FROM clients WHERE email = $1", [
+      email,
+    ]);
+
+    if (user.rows[0].length === 0)
+      return res.status(409).json({ message: "User does not exist!" });
+
+    // gets the real verification code
+    const code = await pool.query(
+      "SELECT * FROM password_reset WHERE email = $1",
+      [email]
+    );
+
+    // checks if the code exists
+    if (code.rows.length === 0)
+      return res.status(400).json({
+        message:
+          "You have made no request to reset your password so no reset code exist.",
+      });
+
+    // checks if the code entered is valid
+    if (code.rows[0].reset_code !== feCode)
+      return res.status(400).json({ message: "Incorrect Code." });
+
+    await pool.query(
+      `UPDATE password_reset 
+        SET modified_at = CURRENT_TIMESTAMP , status = $1
+        WHERE email = $2`,
+      ["success", email]
+    );
+
+    return res.status(200).json({ status: "Success", message: "success" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const resetPW = async (req: Request, res: Response) => {
+  const fields = ["email", "password"];
+
+  // check data for each field in the body and validate format
+  const fieldCheck = Helpers.requiredFields(req.body, fields);
+
+  if (!fieldCheck.success)
+    return res.status(400).json({ message: fieldCheck.message });
+
+  // Validate email format
+  if (!Helpers.emailRegex.test(req.body.email)) {
+    return res.status(400).json({ message: "Invalid email format." });
+  }
+
+  // Get values from body
+  const { email, password, ...rest } = req.body as Partial<User> & {
     [key: string]: any;
   };
 
@@ -119,9 +182,19 @@ const resetPW = async (req: Request, res: Response) => {
       [email]
     );
 
+    // checks if code exists
+    if (code.rows[0].length === 0)
+      return res.status(400).json({
+        message:
+          "You have made no request to reset your password so no reset code exist.",
+      });
+
     // checks if the code entered is valid
-    if (code.rows[0].reset_code !== feCode)
-      return res.status(400).json({ message: "Incorrect Code." });
+    if (code.rows[0].status !== "success")
+      return res.status(400).json({
+        message:
+          "Can't reset password since the password reset code hasn't been verified",
+      });
 
     // hashes password
     const hashedPassword = await bcrypt.hash(password, 10);
