@@ -149,7 +149,7 @@ const register = async (req: Request, res: Response) => {
         email,
       ]);
 
-      if (user.rows[0])
+      if (user.rows.length !== 0)
         return res.status(409).json({ message: "User already exists!" });
 
       // gets the real verification code

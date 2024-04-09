@@ -30,7 +30,7 @@ const sendPWResetCode = async (req: Request, res: Response) => {
       email,
     ]);
 
-    if (user.rows[0].length === 0)
+    if (user.rows.length === 0)
       return res.status(409).json({ message: "User does not exist!" });
 
     await pool.query(`DELETE FROM password_reset WHERE email = $1`, [email]);
@@ -102,7 +102,7 @@ export const verifyPwResetCode = async (req: Request, res: Response) => {
       email,
     ]);
 
-    if (user.rows[0].length === 0)
+    if (user.rows.length === 0)
       return res.status(409).json({ message: "User does not exist!" });
 
     // gets the real verification code
@@ -173,7 +173,7 @@ const resetPW = async (req: Request, res: Response) => {
       email,
     ]);
 
-    if (user.rows[0].length === 0)
+    if (user.rows.length === 0)
       return res.status(409).json({ message: "User does not exist!" });
 
     // gets the real verification code
@@ -183,7 +183,7 @@ const resetPW = async (req: Request, res: Response) => {
     );
 
     // checks if code exists
-    if (code.rows[0].length === 0)
+    if (code.rows.length === 0)
       return res.status(400).json({
         message:
           "You have made no request to reset your password so no reset code exist.",
