@@ -179,10 +179,10 @@ const register = async (req: Request, res: Response) => {
       const msg = {
         from: "Reventlify <reventlifyhub@outlook.com>", // sender address
         to: newUser.rows[0].email, // list of receivers
-        subject: "Welcome To Elevate socials", // Subject line
-        text: `${newUser.rows[0].user_name} thank you for choosing Elevate socials.`, // plain text body
-        html: `<h2>Welcome To Elevate socials</h2>
-        <p>${newUser.rows[0].user_name} thank you for choosing <strong>Elevate socials</strong>.</p>`, //HTML message
+        subject: "Welcome To Reventlify", // Subject line
+        text: `${newUser.rows[0].user_name} thank you for choosing Reventlify.`, // plain text body
+        html: `<h2>Welcome To Reventlify</h2>
+        <p>${newUser.rows[0].user_name} thank you for choosing <strong>Reventlify</strong>.</p>`, //HTML message
       };
 
       // send mail with defined transport object
