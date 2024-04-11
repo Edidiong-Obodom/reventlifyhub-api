@@ -63,7 +63,7 @@ const login = async (req: Request, res: Response) => {
 
     // Sign user's token
     const token = jwt.sign(userData, process.env.ACCESS_TOKEN_SECRET, {
-      expiresIn: "60m",
+      expiresIn: "180m",
     });
 
     // Gets token expiry date

@@ -86,7 +86,7 @@ const sendVerificationCode = async (req: Request, res: Response) => {
 
     await pool.query(
       "INSERT INTO limbo(email, code, status, password, user_name) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [email, emailVCode, "pending", hashedPassword, userName.toLowerCase()]
+      [email, emailVCode, "pending", hashedPassword, userName]
     );
 
     //credentials for email transportation
@@ -180,9 +180,9 @@ const register = async (req: Request, res: Response) => {
         from: "Reventlify <reventlifyhub@outlook.com>", // sender address
         to: newUser.rows[0].email, // list of receivers
         subject: "Welcome To Elevate socials", // Subject line
-        text: `${newUser.rows[0].first_name} thank you for choosing Elevate socials.`, // plain text body
+        text: `${newUser.rows[0].user_name} thank you for choosing Elevate socials.`, // plain text body
         html: `<h2>Welcome To Elevate socials</h2>
-        <p>${newUser.rows[0].first_name} thank you for choosing <strong>Elevate socials</strong>.</p>`, //HTML message
+        <p>${newUser.rows[0].user_name} thank you for choosing <strong>Elevate socials</strong>.</p>`, //HTML message
       };
 
       // send mail with defined transport object

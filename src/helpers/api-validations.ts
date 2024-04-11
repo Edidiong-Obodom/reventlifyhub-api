@@ -8,7 +8,8 @@ import * as Helpers from "../helpers/index";
  */
 export const requiredFields = (
   body: any,
-  fields: string[]
+  fields: string[],
+  notBody?: string
 ): {
   success: boolean;
   message: string;
@@ -16,7 +17,12 @@ export const requiredFields = (
   // check data for each field in the body and validate format
   for (const field of fields) {
     if (!body?.[field]) {
-      return { success: false, message: `${field} field is empty.` };
+      return {
+        success: false,
+        message: `${field} field in the request ${
+          !notBody ? "body" : notBody.toLowerCase()
+        } is empty.`,
+      };
     } else if (
       field.toLowerCase().includes("name") &&
       !Helpers.nameRegex.test(body?.[field]) &&
@@ -28,7 +34,9 @@ export const requiredFields = (
     ) {
       return {
         success: false,
-        message: `Invalid name format in the ${field} field.`,
+        message: `Invalid name format in the ${field} field in the request ${
+          !notBody ? "body" : notBody.toLowerCase()
+        }.`,
       };
     }
   }
@@ -43,9 +51,12 @@ export const requiredFields = (
  * @param rest An object representing the additional properties to be checked.
  * @returns An object indicating whether additional properties were found and a corresponding message.
  */
-export const noExtraFields = (rest: {
-  [key: string]: any;
-}): {
+export const noExtraFields = (
+  rest: {
+    [key: string]: any;
+  },
+  notBody?: string
+): {
   success: boolean;
   message: string;
 } => {
@@ -53,12 +64,16 @@ export const noExtraFields = (rest: {
   if (Object.keys(rest).length > 0) {
     return {
       success: false,
-      message: "Additional properties in the request body are not allowed.",
+      message: `Additional properties in the request ${
+        !notBody ? "body" : notBody.toLowerCase()
+      } are not allowed.`,
     };
   }
 
   return {
     success: true,
-    message: "No additional property in the request body detected.",
+    message: `No additional property in the request ${
+      !rest.notBody ? "body" : rest.notBody.toLowerCase()
+    } detected.`,
   };
 };

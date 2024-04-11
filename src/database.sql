@@ -109,7 +109,7 @@ CREATE TABLE
 CREATE TABLE
     regime_participant (
         id TEXT PRIMARY KEY DEFAULT uuid_generate_v4 (),
-        participant_id TEXT NOT NULL UNIQUE REFERENCES clients (id) ON DELETE CASCADE ON UPDATE CASCADE,
+        participant_id TEXT NOT NULL REFERENCES clients (id) ON DELETE CASCADE ON UPDATE CASCADE,
         regime_id TEXT NOT NULL REFERENCES regimes (id) ON DELETE CASCADE ON UPDATE CASCADE,
         participant_role TEXT NOT NULL DEFAULT 'affiliate',
         balance NUMERIC(17, 2) NOT NULL DEFAULT 0.00,
