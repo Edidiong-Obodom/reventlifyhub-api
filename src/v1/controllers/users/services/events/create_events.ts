@@ -193,6 +193,18 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
   const pricingValidationResult: string[] = [];
 
   // checks to see if all the regime's pricing matches the required format
+  if (regimePricing.length > 10)
+    return res.status(400).json({
+      message: "You cannot have more than 10 pricings for one event.",
+    });
+
+  // checks to see if all the regime's pricing matches the required format
+  if (regimePricing.length === 0)
+    return res.status(400).json({
+      message:
+        "You cannot have 0 pricings for an event, even if it's a free event make one pricing and make the pricing amount 0.",
+    });
+
   regimePricing.map(async (price, i) => {
     const pricingFieldCheck = Helpers.requiredFields(
       price,
