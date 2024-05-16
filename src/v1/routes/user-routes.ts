@@ -6,6 +6,7 @@ import {
   instagramBasicDisplayInit,
   isLoggedIn,
   nameAvailability,
+  ticketPurchase,
 } from "../controllers/users/usersController";
 
 const router = Router();
@@ -15,6 +16,9 @@ router.get("/regime/name/availability", authenticateToken, nameAvailability);
 
 // Create new regime
 router.post("/regime/create", authenticateToken, createRegime);
+
+// Create new regime
+router.post("/tickets/purchase", authenticateToken, ticketPurchase);
 
 // Archive APIs
 router.get("/isloggedin", authenticateToken, isLoggedIn);

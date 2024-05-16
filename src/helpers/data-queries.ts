@@ -76,3 +76,122 @@ export const regimeNameCheck = async (
     return false;
   }
 };
+
+/**
+ * Finds a row in a table in the database by the column have the value asynchronously.
+ *
+ * @param tableName The name of the table we need data from.
+ * @param columnName The name of the column to search for.
+ * @param searchValue The search value.
+ * @returns A promise that resolves with the data if found.
+ */
+export const getData = async (
+  tableName: string,
+  columnName: string,
+  searchValue: string
+) => {
+  const data = await pool.query(
+    `SELECT * FROM ${tableName} WHERE ${columnName} = $1`,
+    [searchValue]
+  );
+  return data;
+};
+
+/**
+ * Finds a row in a table in the database by columns that have the value using Customized Operator asynchronously.
+ *
+ * @param tableName The name of the table we need data from.
+ * @param columnName The names of the column to search for.
+ * @param searchValue The search values.
+ * @returns A promise that resolves with the data if found.
+ */
+export const getData_CustomOperation = async (
+  tableName: string,
+  columnName: string[],
+  searchValue: string[],
+  operations: {
+    ins: string[];
+    between: string[];
+  }
+) => {
+  const { ins, between } = operations;
+  const AndOperation = columnName
+    .map((datai, i) => {
+      if (i === 0) {
+        return `${datai} ${ins[0].trim()} $1 ${
+          between.length > 0 ? between[0].trim() : ""
+        } `;
+      } else {
+        return `${datai} ${ins[i].trim()} $${i + 1} ${
+          i + 1 <= between.length ? between[i].trim() : ""
+        }`;
+      }
+    })
+    .join(" ");
+
+  const data = await pool.query(
+    `SELECT * FROM ${tableName} WHERE ${AndOperation}`,
+    searchValue
+  );
+  return data;
+};
+
+/**
+ * Finds a row in a table in the database by columns that have the value using AND Operator asynchronously.
+ *
+ * @param tableName The name of the table we need data from.
+ * @param columnName The names of the column to search for.
+ * @param searchValue The search values.
+ * @returns A promise that resolves with the data if found.
+ */
+export const getData_AndOperation = async (
+  tableName: string,
+  columnName: string[],
+  searchValue: string[]
+) => {
+  const AndOperation = columnName
+    .map((datai, i) => {
+      if (i === 0) {
+        return `${datai} = $1`;
+      } else {
+        return `AND ${datai} = $${i + 1}`;
+      }
+    })
+    .join(" ");
+
+  const data = await pool.query(
+    `SELECT * FROM ${tableName} WHERE ${AndOperation}`,
+    searchValue
+  );
+  return data;
+};
+
+/**
+ * Finds a row in a table in the database by columns that have the value using OR Operator asynchronously.
+ *
+ * @param tableName The name of the table we need data from.
+ * @param columnName The names of the column to search for.
+ * @param searchValue The search values.
+ * @returns A promise that resolves with the data if found.
+ */
+export const getData_OrOperation = async (
+  tableName: string,
+  columnName: string[],
+  searchValue: string[]
+) => {
+  const AndOperation = columnName
+    .map((datai, i) => {
+      if (i === 0) {
+        return `${datai} = $1`;
+      } else {
+        return `OR ${datai} = $${i + 1}`;
+      }
+    })
+    .join(" ");
+
+  const data = await pool.query(
+    `SELECT * FROM ${tableName} WHERE ${AndOperation}`,
+    searchValue
+  );
+  return data;
+};

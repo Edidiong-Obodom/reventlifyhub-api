@@ -137,3 +137,59 @@ CREATE INDEX idx_client_id_clients ON clients (id);
 CREATE INDEX idx_client_email_clients ON clients (email);
 
 CREATE INDEX idx_client_email_pw_reset ON password_reset (email);
+
+-- Functions
+-- GetAllTicketsOwned Begins
+CREATE OR REPLACE FUNCTION GetAllTicketsOwned(ownerId TEXT, pricingId TEXT)
+RETURNS TABLE (
+        client TEXT,
+        first_name VARCHAR(255),
+        last_name VARCHAR(255),
+        regime_name VARCHAR(255),
+        pricing_name VARCHAR(255),
+        amount NUMERIC(17, 2),
+        ticket_id TEXT,
+        status TEXT
+)
+AS
+$$
+DECLARE
+    regimeId TEXT;
+BEGIN
+    -- Get regime_id from pricings table
+    SELECT pricings.regime_id INTO regimeId
+    FROM tickets
+    JOIN pricings ON tickets.pricing_id = pricings.id
+    WHERE tickets.owner_id = ownerId AND tickets.pricing_id = pricingId
+    LIMIT 1;
+
+    -- Get 
+    
+    -- Return select from tickets based on owner_id and regime_id
+    RETURN QUERY
+    SELECT 
+    clients.id as client,
+    clients.first_name,
+    clients.last_name,
+    regimes.name as regime_name, 
+    pricings.name as pricing_name, 
+    pricings.amount,
+    tickets.id as ticket_id,
+    tickets.status
+    FROM tickets
+    JOIN pricings ON tickets.pricing_id = pricings.id
+    JOIN regimes ON pricings.regime_id = regimes.id
+    JOIN clients on clients.id = tickets.owner_id
+    WHERE tickets.owner_id = ownerId 
+    AND pricings.regime_id = regimeId;
+END;
+$$
+LANGUAGE plpgsql;
+--usage
+SELECT * FROM GetAllTicketsOwned(
+    '220d8073-447d-43e2-a2fc-e9f8a53b0f30',
+    '4d3a8783-7b8d-4283-aa02-04a5ef331ca3'
+);
+--deletion
+DROP FUNCTION getallticketsowned(text,text)
+-- GetAllTicketsOwned Ends
