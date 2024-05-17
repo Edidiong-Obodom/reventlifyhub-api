@@ -157,11 +157,9 @@ DECLARE
     regimeId TEXT;
 BEGIN
     -- Get regime_id from pricings table
-    SELECT pricings.regime_id INTO regimeId
-    FROM tickets
-    JOIN pricings ON tickets.pricing_id = pricings.id
-    WHERE tickets.owner_id = ownerId AND tickets.pricing_id = pricingId
-    LIMIT 1;
+    SELECT regime_id INTO regimeId
+    FROM pricings
+    WHERE id = pricingId;
 
     -- Get 
     
@@ -177,8 +175,8 @@ BEGIN
     tickets.id as ticket_id,
     tickets.status
     FROM tickets
-    JOIN pricings ON tickets.pricing_id = pricings.id
-    JOIN regimes ON pricings.regime_id = regimes.id
+    JOIN pricings ON pricings.id = tickets.pricing_id
+    JOIN regimes ON regimes.id = pricings.regime_id
     JOIN clients on clients.id = tickets.owner_id
     WHERE tickets.owner_id = ownerId 
     AND pricings.regime_id = regimeId;

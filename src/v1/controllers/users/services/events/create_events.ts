@@ -93,7 +93,6 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
     "regimeCountry",
     "regimeWithdrawalPin",
     "regimeMediaBase64",
-    "regimeAffiliate",
     "regimeStartDate",
     "regimeStartTime",
     "regimeEndDate",
@@ -218,13 +217,21 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
     }
 
     if (
-      price.pricingAmount &&
       regimeAffiliate &&
-      (price.pricingAmount < 1000 || price.pricingAffiliateAmount < 100)
+      (!price.pricingAmount ||
+        !price.pricingAffiliateAmount ||
+        price.pricingAmount < 1000 ||
+        price.pricingAffiliateAmount < 100)
     ) {
       pricingValidationResult.push(
         "Pricing amount cannot be lesser than 1000, and affiliate amount cannot be lesser than 100 when affiliate is true. Check pricing number " +
           Number(i + 1)
+      );
+    }
+
+    if (!regimeAffiliate && price.pricingAffiliateAmount) {
+      pricingValidationResult.push(
+        "Pricing can't have pricingAffiliateAmount when regimeAffiliate is false"
       );
     }
   });
@@ -318,7 +325,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       subject: "Newly Created Regime",
       text: `Congrats ${userName} just successfully created ${newRegime.rows[0].name} a ${newRegime.rows[0].type} type event with Reventlify.`,
       html: `<h1>Newly Created Regime</h1>
-              <p>Congrats ${userName} just successfully created 
+              <p>Congrats ${userName} just successfully created
               <strong>${newRegime.rows[0].name}
               </strong> a ${newRegime.rows[0].type} type event with <strong>Reventlify</strong></p>`,
     });
@@ -328,13 +335,12 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       subject: "Regime Creation Successful",
       text: `${userName} you have successfully created ${newRegime.rows[0].name} a ${newRegime.rows[0].type} type of event, thank you for choosing Reventlify.`,
       html: `<h2>Regime Creation Successful</h2>
-              <p>${userName} you have successfully created 
+              <p>${userName} you have successfully created
               <strong>${newRegime.rows[0].name}
-              </strong> a ${newRegime.rows[0].type} type of event, 
+              </strong> a ${newRegime.rows[0].type} type of event,
               thank you for choosing <strong>Reventlify</strong>.</p>`,
     });
 
-    // return
     return res.status(200).json({ "Regime Creation": "Successful!" });
   } catch (error) {
     console.log(error);

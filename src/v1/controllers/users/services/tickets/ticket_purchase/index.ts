@@ -3,6 +3,7 @@ import { ExtendedRequest } from "../../../../../../utilities/authenticateToken/a
 import * as Helpers from "../../../../../../helpers";
 import { pool } from "../../../../../../db";
 import axios from "axios";
+import * as nodemailer from "nodemailer";
 
 export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
   const user = req.user;
@@ -100,6 +101,62 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
       });
     }
 
+    if (Number(amount) === 0) {
+      await pool.query("BEGIN");
+
+      // Insert into transactions table
+      const transaction = await pool.query(
+        `INSERT INTO transactions (client_id, regime_id, transaction_type, amount, currency) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        [user, regimeId, "free", Number(amount), "ngn"]
+      );
+      const transactionId = transaction.rows[0].id;
+
+      // Create tickets
+      for (let i = 0; i < counter; i++) {
+        await pool.query(
+          `INSERT INTO tickets (pricing_id, transaction_id, buyer_id, owner_id, status, affiliate_id) VALUES ($1, $2, $3, $4, $5, $6)`,
+          [pricingId, transactionId, user, user, "active", affiliate]
+        );
+      }
+
+      // Update available seats
+      await pool.query(
+        `UPDATE pricings SET available_seats = available_seats - $1 WHERE id = $2 RETURNING *`,
+        [counter, pricingId]
+      );
+
+      await pool.query("COMMIT");
+
+      // Send email notification
+      const transporter = nodemailer.createTransport(Helpers.mailCredentials);
+
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: "Ticket Purchase Successful",
+        text: `You have successfully purchased ${counter} tickets for the regime ${regime.rows[0].name}.`,
+        html: `You have successfully purchased ${counter} tickets for the regime <strong>${regime.rows[0].name}</strong>.`,
+      };
+
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error(`Error sending email: ${error.message}`);
+        }
+      });
+
+      return res.status(200).json({
+        message: "Tickets successfully created.",
+        data: {
+          amount,
+          pricingId,
+          regimeId,
+          counter,
+          available_tickets:
+            parseFloat(regimePricing.rows[0].available_seats) - counter,
+        },
+      });
+    }
+
     // params
     const params = JSON.stringify({
       email: email,
@@ -138,7 +195,9 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
       },
     });
   } catch (error) {
+    console.log(error);
     console.log(error.message);
+    await pool.query("ROLLBACK");
     return res.status(500).json({ message: "Oops something went wrong..." });
   }
 };
