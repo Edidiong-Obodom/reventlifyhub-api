@@ -41,6 +41,10 @@ export const ticket_purchase_paystackWebhook = async ({
       name,
       affiliate_amount,
     } = pricingDetails.rows[0];
+    console.log("pricing_amount: " + pricing_amount);
+    console.log(pricing_amount);
+    
+    
     // Get all details ends
 
     // response if transaction already exists

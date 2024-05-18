@@ -11,6 +11,8 @@ export const paystackWebhook = async (req: Request, res: Response) => {
     if (hash == req.headers["x-paystack-signature"]) {
       // Retrieve the request's body
       const event = req.body;
+      console.log(event);
+      
       const { reference } = event.data;
       const {
         buyerId: userId,
