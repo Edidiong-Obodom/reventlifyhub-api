@@ -22,6 +22,10 @@ export const paystackWebhook = async (req: Request, res: Response) => {
         numberOfTickets,
         transactionType,
       } = event.data.metadata.data;
+      console.log("=========div=======");
+      console.log(event.data.metadata.data);
+      
+      
       const paymentStatus = event.data.status;
 
       // converts it to naira

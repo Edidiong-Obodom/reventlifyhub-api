@@ -42,7 +42,9 @@ export const ticket_purchase_paystackWebhook = async ({
       affiliate_amount,
     } = pricingDetails.rows[0];
     console.log("pricing_amount: " + pricing_amount);
+    console.log("pricing_amount amount: " + amount);
     console.log(pricing_amount);
+    console.log(amount);
     
     
     // Get all details ends
