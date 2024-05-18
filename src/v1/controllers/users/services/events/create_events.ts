@@ -263,7 +263,6 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       cloudinary.uploader.upload(regimeMediaBase64, { folder: "regime_media" }),
     ]);
 
-    await pool.query("BEGIN");
     // creates the regime
     const newRegime = await pool.query(
       `INSERT INTO regimes(
@@ -293,6 +292,8 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
         regimeDescription,
       ]
     );
+
+    await pool.query("BEGIN");
 
     // creates all the regime's pricing
     regimePricing.map(async (price) => {

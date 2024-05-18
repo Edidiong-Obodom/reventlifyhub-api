@@ -190,6 +190,9 @@ export const ticket_purchase_paystackWebhook = async ({
 
     const transactionId = transaction.rows[0].id;
 
+    await pool.query("COMMIT");
+
+    await pool.query("BEGIN");
     // Create tickets
     for (let i = 0; i < numberOfTickets; i++) {
       await pool.query(
