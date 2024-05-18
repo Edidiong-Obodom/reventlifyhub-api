@@ -176,7 +176,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
     // params
     const params = JSON.stringify({
       email: email,
-      amount: Number(amount) * 100,
+      amount: Number(amount * counter) * 100,
       metadata: {
         data: {
           regimeId: regimeId,
