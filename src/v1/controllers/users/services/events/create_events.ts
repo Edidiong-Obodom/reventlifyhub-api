@@ -284,7 +284,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
         resultOfUpdate.public_id,
         0.0,
         regimeAffiliate,
-        "ONGOING".toLowerCase(),
+        "pending",
         regimeStartDate,
         regimeStartTime,
         regimeEndDate,
