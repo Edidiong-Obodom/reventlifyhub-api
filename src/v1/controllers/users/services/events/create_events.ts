@@ -263,6 +263,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       cloudinary.uploader.upload(regimeMediaBase64, { folder: "regime_media" }),
     ]);
 
+    await pool.query("BEGIN");
     // creates the regime
     const newRegime = await pool.query(
       `INSERT INTO regimes(
@@ -293,10 +294,9 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       ]
     );
 
-    await pool.query("BEGIN");
-
     // creates all the regime's pricing
-    regimePricing.map(async (price) => {
+    // regimePricing.map(async (price) => {
+    for (const price of regimePricing) {
       await pool.query(
         `INSERT INTO pricings(regime_id, name, total_seats, available_seats, amount, affiliate_amount) 
         VALUES($1, $2, $3, $4, $5, $6) RETURNING *`,
@@ -309,8 +309,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
           price.pricingAffiliateAmount,
         ]
       );
-    });
-
+    }
     await pool.query(
       `
       INSERT INTO regime_participant(participant_id, regime_id, participant_role) 
