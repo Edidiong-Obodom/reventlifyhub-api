@@ -39,6 +39,12 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
       return res.status(400).json({ message: "Regime does not exist." });
     }
 
+    if (regime.rows[0].status !== "pending") {
+      return res
+        .status(400)
+        .json({ message: "Tickets are not being sold anymore." });
+    }
+
     // Check if pricing exists
     const pricing = await Helpers.getData("pricings", "id", pricingId);
 
@@ -106,8 +112,18 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
 
       // Insert into transactions table
       const transaction = await pool.query(
-        `INSERT INTO transactions (client_id, regime_id, transaction_type, amount, currency) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-        [user, regimeId, "free", Number(amount), "ngn"]
+        `INSERT INTO transactions 
+        (client_id, regime_id, transaction_action, transaction_type, amount, currency, status) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+        [
+          user,
+          regimeId,
+          "ticket-purchase",
+          "free",
+          Number(amount),
+          "ngn",
+          "success",
+        ]
       );
       const transactionId = transaction.rows[0].id;
 
@@ -134,8 +150,8 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
         from: process.env.EMAIL_USER,
         to: email,
         subject: "Ticket Purchase Successful",
-        text: `You have successfully purchased ${counter} tickets for the regime ${regime.rows[0].name}.`,
-        html: `You have successfully purchased ${counter} tickets for the regime <strong>${regime.rows[0].name}</strong>.`,
+        text: `You have successfully purchased ${counter} ticket(s) for the regime ${regime.rows[0].name}.`,
+        html: `You have successfully purchased ${counter} ticket(s) for the regime <strong>${regime.rows[0].name}</strong>.`,
       };
 
       transporter.sendMail(mailOptions, (error, info) => {
@@ -167,7 +183,8 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
           pricingId: pricingId,
           affiliateId: affiliate,
           buyerId: user,
-          numberOfTickets: counter,
+          numberOfTickets: Number(counter),
+          transactionType: "ticket-purchase",
         },
       },
     });

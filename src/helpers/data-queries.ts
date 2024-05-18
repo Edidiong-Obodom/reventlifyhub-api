@@ -7,7 +7,7 @@ import { pool } from "../db";
  * @param userID The ID of the user to search for.
  * @returns A promise that resolves with the user data if found.
  */
-export const findUserById = async (userID: string) => {
+export const findUserById = async (userID: string = "") => {
   const data = await pool.query("SELECT * FROM clients WHERE id = $1", [
     userID,
   ]);

@@ -102,6 +102,9 @@ CREATE TABLE
         amount NUMERIC(17, 2) NOT NULL DEFAULT 0.00,
         currency VARCHAR(3) NOT NULL DEFAULT 'ngn',
         transaction_reference TEXT,
+        transaction_action TEXT DEFAULT 'ticket-purchase'
+        description TEXT,
+        status TEXT DEFAULT 'pending',
         payment_gateway TEXT NOT NULL DEFAULT 'RIP-Gateway',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );

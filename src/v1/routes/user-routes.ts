@@ -8,6 +8,7 @@ import {
   nameAvailability,
   ticketPurchase,
 } from "../controllers/users/usersController";
+import { paystackWebhook } from "../controllers/users/payments";
 
 const router = Router();
 
@@ -19,6 +20,9 @@ router.post("/regime/create", authenticateToken, createRegime);
 
 // Create new regime
 router.post("/tickets/purchase", authenticateToken, ticketPurchase);
+
+// Payments
+router.post("/tickets/purchase/paystack-webhook", paystackWebhook);
 
 // Archive APIs
 router.get("/isloggedin", authenticateToken, isLoggedIn);

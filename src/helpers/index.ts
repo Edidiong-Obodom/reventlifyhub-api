@@ -5,3 +5,4 @@ export * from "./general";
 export * from "./data-queries";
 export * from "./media";
 export * from "./typeCheck";
+export * from "./payments";

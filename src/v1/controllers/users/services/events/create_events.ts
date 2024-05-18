@@ -263,6 +263,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       cloudinary.uploader.upload(regimeMediaBase64, { folder: "regime_media" }),
     ]);
 
+    await pool.query("BEGIN");
     // creates the regime
     const newRegime = await pool.query(
       `INSERT INTO regimes(
@@ -316,6 +317,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       `,
       [newRegime.rows[0].creator_id, newRegime.rows[0].id, "creator"]
     );
+    await pool.query("COMMIT");
     //credentials for email transportation
     const transport = nodemailer.createTransport(Helpers.mailCredentials);
 
@@ -344,6 +346,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
     return res.status(200).json({ "Regime Creation": "Successful!" });
   } catch (error) {
     console.log(error);
+    await pool.query("ROLLBACK");
     return res.status(500).json(error.message);
   }
 };
