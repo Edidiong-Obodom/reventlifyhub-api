@@ -21,6 +21,7 @@ export const ticket_purchase_paystackWebhook = async ({
   message: string;
   error?: any;
 }> => {
+  await pool.query("BEGIN");
   try {
     // Use Promise.all for Concurrent Operations
     const [clientDetails, regimeDetails, pricingDetails, transactionExistence] =
@@ -157,7 +158,6 @@ export const ticket_purchase_paystackWebhook = async ({
     console.log("regimeMoney: " + regimeMoney);
 
     const companyMoney = charge - paystackCharge;
-    await pool.query("BEGIN");
     // Use Promise.all for Concurrent Operations
     const [
       regimeUpdate,
@@ -165,6 +165,7 @@ export const ticket_purchase_paystackWebhook = async ({
       affiliateUpdate,
       transaction,
       pricingUpdate,
+      mailClient
     ] = await Promise.all([
       // credits regime
       pool.query(
