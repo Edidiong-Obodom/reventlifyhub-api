@@ -139,6 +139,8 @@ export const ticket_purchase_paystackWebhook = async ({
     const regimeMoney = affiliateId
       ? realAmount - (charge + affiliate_amount * Number(numberOfTickets))
       : realAmount - charge;
+      console.log("regimeMoney: " + regimeMoney);
+      
     const companyMoney = charge - paystackCharge;
     await pool.query("BEGIN");
     // Use Promise.all for Concurrent Operations
