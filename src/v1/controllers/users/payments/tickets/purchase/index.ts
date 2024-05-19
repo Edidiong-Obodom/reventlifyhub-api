@@ -175,13 +175,15 @@ export const ticket_purchase_paystackWebhook = async ({
       // Insert into transactions table
       pool.query(
         `INSERT INTO transactions 
-        (client_id, regime_id, transaction_action, transaction_type, amount, currency, status) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+        (client_id, regime_id, transaction_action, transaction_type, transaction_reference, payment_gateway, amount, currency, status) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
         [
           userId,
           regimeId,
           "ticket-purchase",
-          "free",
+          "debit",
+          reference,
+          "paystack",
           Number(amount),
           "ngn",
           "success",
