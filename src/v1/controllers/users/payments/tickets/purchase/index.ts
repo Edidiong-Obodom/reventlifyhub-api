@@ -21,7 +21,6 @@ export const ticket_purchase_paystackWebhook = async ({
   message: string;
   error?: any;
 }> => {
-  await pool.query("BEGIN");
   try {
     // Use Promise.all for Concurrent Operations
     const [clientDetails, regimeDetails, pricingDetails, transactionExistence] =
@@ -35,7 +34,7 @@ export const ticket_purchase_paystackWebhook = async ({
     // Get all details begins
     const eventStatus = Helpers.paystackStatusHandler(event, paymentStatus);
 
-    const { first_name, last_name, email } = clientDetails.rows[0];
+    const { user_name, email } = clientDetails.rows[0];
 
     const {
       amount: pricing_amount,
@@ -46,6 +45,22 @@ export const ticket_purchase_paystackWebhook = async ({
     console.log("pricing_amount amount: " + amount);
     console.log(pricing_amount);
     console.log(amount);
+    // Send email notification
+    const transporter = nodemailer.createTransport(Helpers.mailCredentials);
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Ticket Purchase Successful",
+      text: `${capitalize(user_name)} you have successfully purchased ${Number(
+        numberOfTickets
+      )} ${name} ticket(s) for the regime ${regimeDetails.rows[0].name}.`,
+      html: `${capitalize(user_name)} you have successfully purchased ${Number(
+        numberOfTickets
+      )} ${name} ticket(s) for the regime <strong>${
+        regimeDetails.rows[0].name
+      }</strong>.`,
+    };
 
     // Get all details ends
 
@@ -142,55 +157,63 @@ export const ticket_purchase_paystackWebhook = async ({
     console.log("regimeMoney: " + regimeMoney);
 
     const companyMoney = charge - paystackCharge;
-    // credits regime
-    const regimeUpdate = await pool.query(
-      `UPDATE regimes
-    SET balance = balance + $1
-    WHERE id = $2 RETURNING *`,
-      [regimeMoney, regimeId]
-    );
+    await pool.query("BEGIN");
     // Use Promise.all for Concurrent Operations
-    const [companyUpdate, affiliateUpdate, transaction, pricingUpdate] =
-      await Promise.all([
-        // credits company
-        pool.query(
-          `UPDATE company_funds
+    const [
+      regimeUpdate,
+      companyUpdate,
+      affiliateUpdate,
+      transaction,
+      pricingUpdate,
+    ] = await Promise.all([
+      // credits regime
+      pool.query(
+        `UPDATE regimes
+        SET balance = balance + $1
+        WHERE id = $2 RETURNING *`,
+        [regimeMoney, regimeId]
+      ),
+      // credits company
+      pool.query(
+        `UPDATE company_funds
       SET available_balance = available_balance + $1
       WHERE currency = $2 RETURNING *`,
-          [companyMoney, "ngn"]
-        ),
-        // credits affiliate
-        affiliateId
-          ? pool.query(
-              `UPDATE clients
+        [companyMoney, "ngn"]
+      ),
+      // credits affiliate
+      affiliateId
+        ? pool.query(
+            `UPDATE clients
       SET balance = balance + $1
       WHERE id = $2 RETURNING *`,
-              [Number(affiliate_amount * numberOfTickets), affiliateId]
-            )
-          : "",
-        // Insert into transactions table
-        pool.query(
-          `INSERT INTO transactions 
+            [Number(affiliate_amount * numberOfTickets), affiliateId]
+          )
+        : "",
+      // Insert into transactions table
+      pool.query(
+        `INSERT INTO transactions 
         (client_id, regime_id, transaction_action, transaction_type, transaction_reference, payment_gateway, amount, currency, status) 
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
-          [
-            userId,
-            regimeId,
-            "ticket-purchase",
-            "debit",
-            reference,
-            "paystack",
-            Number(amount),
-            "ngn",
-            "success",
-          ]
-        ),
-        // Update available seats
-        pool.query(
-          `UPDATE pricings SET available_seats = available_seats - $1 WHERE id = $2 RETURNING *`,
-          [Number(numberOfTickets), pricingId]
-        ),
-      ]);
+        [
+          userId,
+          regimeId,
+          "ticket-purchase",
+          "debit",
+          reference,
+          "paystack",
+          Number(amount),
+          "ngn",
+          "success",
+        ]
+      ),
+      // Update available seats
+      pool.query(
+        `UPDATE pricings SET available_seats = available_seats - $1 WHERE id = $2 RETURNING *`,
+        [Number(numberOfTickets), pricingId]
+      ),
+      // send mail with defined transport object
+      transporter.sendMail(mailOptions),
+    ]);
 
     const transactionId = transaction.rows[0].id;
 
@@ -206,33 +229,6 @@ export const ticket_purchase_paystackWebhook = async ({
     console.log("=======regime update=========");
 
     console.log(regimeUpdate.rows[0]);
-
-    // Send email notification
-    const transporter = nodemailer.createTransport(Helpers.mailCredentials);
-
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Ticket Purchase Successful",
-      text: `${capitalize(first_name)} ${capitalize(
-        last_name
-      )} you have successfully purchased ${Number(
-        numberOfTickets
-      )} ${name} ticket(s) for the regime ${regimeDetails.rows[0].name}.`,
-      html: `${capitalize(first_name)} ${capitalize(
-        last_name
-      )} you have successfully purchased ${Number(
-        numberOfTickets
-      )} ${name} ticket(s) for the regime <strong>${
-        regimeDetails.rows[0].name
-      }</strong>.`,
-    };
-
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error(`Error sending email: ${error.message}`);
-      }
-    });
     return {
       status: 200,
       message: "Ticket Purchase Successful",
