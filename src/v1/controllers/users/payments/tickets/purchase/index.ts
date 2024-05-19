@@ -209,6 +209,11 @@ export const ticket_purchase_paystackWebhook = async ({
     }
     await pool.query("COMMIT");
 
+    console.log("=======regime update=========");
+    
+    console.log(regimeUpdate.rows[0]);
+    
+
     // Send email notification
     const transporter = nodemailer.createTransport(Helpers.mailCredentials);
 
