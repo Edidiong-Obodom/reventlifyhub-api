@@ -30,7 +30,7 @@ export const paystackWebhook = async (req: Request, res: Response) => {
 
       // converts it to naira
       const realAmount = Number(event.data.amount) / 100;
-      const amount = Number(event.data.amount) / 100 / numberOfTickets;
+      const amount = Number(event.data.amount) / 100 / Number(numberOfTickets);
 
       if (transactionType === "ticket-purchase") {
         const ticketPurchase = await tickets.ticket_purchase_paystackWebhook({

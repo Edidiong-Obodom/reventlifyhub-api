@@ -58,31 +58,31 @@ export const ticket_purchase_paystackWebhook = async ({
       return { status: 200, message: `transaction has been fulfilled already` };
 
     // Amount mismatch handler
-    if (pricing_amount !== amount) {
-      // Insert into transactions table
-      await pool.query(
-        `INSERT INTO transactions 
-        (client_id, regime_id, transaction_reference, transaction_type, amount, currency, description, status) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-        [
-          userId,
-          regimeId,
-          reference,
-          "debit",
-          Number(amount),
-          "ngn",
-          `Transaction ${eventStatus.description}.`,
-          eventStatus.status,
-        ]
-      );
-      return {
-        status:
-          eventStatus.status !== "failed" && eventStatus.status !== "processed"
-            ? 400
-            : 200,
-        message: "Pricing amount doesn't match amount paid.",
-      };
-    }
+    // if (pricing_amount !== amount) {
+    //   // Insert into transactions table
+    //   await pool.query(
+    //     `INSERT INTO transactions 
+    //     (client_id, regime_id, transaction_reference, transaction_type, amount, currency, description, status) 
+    //     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+    //     [
+    //       userId,
+    //       regimeId,
+    //       reference,
+    //       "debit",
+    //       Number(amount),
+    //       "ngn",
+    //       `Transaction ${eventStatus.description}.`,
+    //       eventStatus.status,
+    //     ]
+    //   );
+    //   return {
+    //     status:
+    //       eventStatus.status !== "failed" && eventStatus.status !== "processed"
+    //         ? 400
+    //         : 200,
+    //     message: "Pricing amount doesn't match amount paid.",
+    //   };
+    // }
 
     // Resppnse when payment transaction was not completed
     if (
@@ -132,12 +132,12 @@ export const ticket_purchase_paystackWebhook = async ({
 
     const { charge, paystackCharge } = Helpers.chargeHandler(
       realAmount,
-      numberOfTickets,
+      Number(numberOfTickets),
       amount
     );
 
     const regimeMoney = affiliateId
-      ? realAmount - (charge + affiliate_amount * numberOfTickets)
+      ? realAmount - (charge + affiliate_amount * Number(numberOfTickets))
       : realAmount - charge;
     const companyMoney = charge - paystackCharge;
     await pool.query("BEGIN");
@@ -190,14 +190,14 @@ export const ticket_purchase_paystackWebhook = async ({
       // Update available seats
       pool.query(
         `UPDATE pricings SET available_seats = available_seats - $1 WHERE id = $2 RETURNING *`,
-        [numberOfTickets, pricingId]
+        [Number(numberOfTickets), pricingId]
       ),
     ]);
 
     const transactionId = transaction.rows[0].id;
 
     // Create tickets
-    for (let i = 0; i < numberOfTickets; i++) {
+    for (let i = 0; i < Number(numberOfTickets); i++) {
       await pool.query(
         `INSERT INTO tickets (pricing_id, transaction_id, buyer_id, owner_id, status, affiliate_id) VALUES ($1, $2, $3, $4, $5, $6)`,
         [pricingId, transactionId, userId, userId, "active", affiliateId]
@@ -214,12 +214,12 @@ export const ticket_purchase_paystackWebhook = async ({
       subject: "Ticket Purchase Successful",
       text: `${capitalize(first_name)} ${capitalize(
         last_name
-      )} you have successfully purchased ${numberOfTickets} ${name} ticket(s) for the regime ${
+      )} you have successfully purchased ${Number(numberOfTickets)} ${name} ticket(s) for the regime ${
         regimeDetails.rows[0].name
       }.`,
       html: `${capitalize(first_name)} ${capitalize(
         last_name
-      )} you have successfully purchased ${numberOfTickets} ${name} ticket(s) for the regime <strong>${
+      )} you have successfully purchased ${Number(numberOfTickets)} ${name} ticket(s) for the regime <strong>${
         regimeDetails.rows[0].name
       }</strong>.`,
     };
