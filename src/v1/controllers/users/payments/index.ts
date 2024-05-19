@@ -11,8 +11,7 @@ export const paystackWebhook = async (req: Request, res: Response) => {
     if (hash == req.headers["x-paystack-signature"]) {
       // Retrieve the request's body
       const event = req.body;
-      console.log(event);
-      
+
       const { reference } = event.data;
       const {
         buyerId: userId,
@@ -21,11 +20,9 @@ export const paystackWebhook = async (req: Request, res: Response) => {
         affiliateId,
         numberOfTickets,
         transactionType,
+        transactionId,
       } = event.data.metadata.data;
-      console.log("=========div=======");
-      console.log(event.data.metadata.data);
-      
-      
+
       const paymentStatus = event.data.status;
 
       // converts it to naira
@@ -43,6 +40,7 @@ export const paystackWebhook = async (req: Request, res: Response) => {
           regimeId,
           pricingId,
           affiliateId,
+          transactionId,
           numberOfTickets,
           transactionType,
         });
@@ -51,6 +49,11 @@ export const paystackWebhook = async (req: Request, res: Response) => {
           .status(ticketPurchase.status)
           .json({ message: ticketPurchase.message });
       }
+    } else {
+      return res.status(400).json({
+        message:
+          "Get a life, stealing is not good. Go and learn a decent skill or trade or something... 😒👎",
+      });
     }
   } catch (error) {
     console.log(error);

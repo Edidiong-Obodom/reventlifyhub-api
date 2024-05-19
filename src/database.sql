@@ -106,6 +106,7 @@ CREATE TABLE
         description TEXT,
         status TEXT DEFAULT 'pending',
         payment_gateway TEXT NOT NULL DEFAULT 'RIP-Gateway',
+        modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -194,3 +195,11 @@ SELECT * FROM GetAllTicketsOwned(
 --deletion
 DROP FUNCTION getallticketsowned(text,text)
 -- GetAllTicketsOwned Ends
+
+
+DELETE FROM tickets;
+DELETE FROM transactions;
+UPDATE company_funds SET available_balance = 0 WHERE available_balance > 0;
+UPDATE clients SET balance = 0 WHERE balance > 0;
+UPDATE regimes SET balance = 0 WHERE balance > 0;
+UPDATE pricings SET available_seats = total_seats WHERE available_seats > 0;

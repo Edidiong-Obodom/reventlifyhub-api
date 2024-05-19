@@ -8,6 +8,7 @@ export interface TicketPurchase {
   regimeId: string;
   pricingId: string;
   affiliateId: string;
+  transactionId: string;
   numberOfTickets: number;
   transactionType?: string;
 }

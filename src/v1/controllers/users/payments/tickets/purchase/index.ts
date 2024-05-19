@@ -14,6 +14,7 @@ export const ticket_purchase_paystackWebhook = async ({
   regimeId,
   pricingId,
   affiliateId,
+  transactionId,
   numberOfTickets,
   transactionType,
 }: TicketPurchase): Promise<{
@@ -32,20 +33,12 @@ export const ticket_purchase_paystackWebhook = async ({
         Helpers.getData("transactions", "transaction_reference", reference),
       ]);
 
-    // Get all details begins
-    const eventStatus = Helpers.paystackStatusHandler(event, paymentStatus);
-
     const { user_name, email } = clientDetails.rows[0];
 
     const {
-      amount: pricing_amount,
       name,
       affiliate_amount,
     } = pricingDetails.rows[0];
-    console.log("pricing_amount: " + pricing_amount);
-    console.log("pricing_amount amount: " + amount);
-    console.log(pricing_amount);
-    console.log(amount);
     // Send email notification
     const transporter = nodemailer.createTransport(Helpers.mailCredentials);
 
@@ -73,80 +66,31 @@ export const ticket_purchase_paystackWebhook = async ({
     )
       return { status: 200, message: `transaction has been fulfilled already` };
 
-    // Amount mismatch handler
-    // if (pricing_amount !== amount) {
-    //   // Insert into transactions table
-    //   await pool.query(
-    //     `INSERT INTO transactions
-    //     (client_id, regime_id, transaction_reference, transaction_type, amount, currency, description, status)
-    //     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-    //     [
-    //       userId,
-    //       regimeId,
-    //       reference,
-    //       "debit",
-    //       Number(amount),
-    //       "ngn",
-    //       `Transaction ${eventStatus.description}.`,
-    //       eventStatus.status,
-    //     ]
-    //   );
-    //   return {
-    //     status:
-    //       eventStatus.status !== "failed" && eventStatus.status !== "processed"
-    //         ? 400
-    //         : 200,
-    //     message: "Pricing amount doesn't match amount paid.",
-    //   };
-    // }
-
     // Resppnse when payment transaction was not completed
     if (
       paymentStatus.toLowerCase() !== "success" &&
       paymentStatus.toLowerCase() !== "failed" &&
       paymentStatus.toLowerCase() !== "pending" &&
       paymentStatus.toLowerCase() !== "processed"
-    )
+    ) {
       return {
         status: 400,
         message:
           "The transaction status from Paystack is neither successful, failed, pending nor processed.",
       };
-
-    if (
-      paymentStatus.toLowerCase() === "failed" ||
-      paymentStatus.toLowerCase() === "pending" ||
-      paymentStatus.toLowerCase() === "processed"
-    ) {
-      // Insert into transactions table
+    } else if (paymentStatus.toLowerCase() === "failed") {
       await pool.query(
-        `INSERT INTO transactions 
-        (client_id, regime_id, transaction_reference, transaction_type, amount, currency, description, status) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-        [
-          userId,
-          regimeId,
-          reference,
-          "debit",
-          realAmount,
-          "ngn",
-          `Transaction ${eventStatus.description}.`,
-          eventStatus.status,
-        ]
+        `UPDATE transactions SET status = $1, modified_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
+        ["failed", transactionId]
       );
+
       return {
-        status:
-          eventStatus.status !== "failed" && eventStatus.status !== "processed"
-            ? 400
-            : 200,
-        message:
-          eventStatus.status !== "failed" && eventStatus.status !== "processed"
-            ? "Transaction pending."
-            : "Transaction fulfilled",
+        status: 200,
+        message: "Transaction failed",
       };
     }
 
-    const { charge, paystackCharge } = Helpers.chargeHandler(
+    const { charge } = Helpers.chargeHandler(
       realAmount,
       Number(numberOfTickets),
       amount
@@ -155,18 +99,10 @@ export const ticket_purchase_paystackWebhook = async ({
     const regimeMoney = affiliateId
       ? realAmount - (charge + affiliate_amount * Number(numberOfTickets))
       : realAmount - charge;
-    console.log("regimeMoney: " + regimeMoney);
 
-    const companyMoney = charge - paystackCharge;
+    const companyMoney = charge;
     // Use Promise.all for Concurrent Operations
-    const [
-      regimeUpdate,
-      companyUpdate,
-      affiliateUpdate,
-      transaction,
-      pricingUpdate,
-      mailClient
-    ] = await Promise.all([
+    await Promise.all([
       // credits regime
       pool.query(
         `UPDATE regimes
@@ -190,46 +126,42 @@ export const ticket_purchase_paystackWebhook = async ({
             [Number(affiliate_amount * numberOfTickets), affiliateId]
           )
         : "",
-      // Insert into transactions table
-      pool.query(
-        `INSERT INTO transactions 
-        (client_id, regime_id, transaction_action, transaction_type, transaction_reference, payment_gateway, amount, currency, status) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
-        [
-          userId,
-          regimeId,
-          "ticket-purchase",
-          "debit",
-          reference,
-          "paystack",
-          Number(amount),
-          "ngn",
-          "success",
-        ]
-      ),
-      // Update available seats
-      pool.query(
-        `UPDATE pricings SET available_seats = available_seats - $1 WHERE id = $2 RETURNING *`,
-        [Number(numberOfTickets), pricingId]
-      ),
-      // send mail with defined transport object
-      transporter.sendMail(mailOptions),
     ]);
-
-    const transactionId = transaction.rows[0].id;
 
     // Create tickets
     for (let i = 0; i < Number(numberOfTickets); i++) {
       await pool.query(
-        `INSERT INTO tickets (pricing_id, transaction_id, buyer_id, owner_id, status, affiliate_id) VALUES ($1, $2, $3, $4, $5, $6)`,
-        [pricingId, transactionId, userId, userId, "active", affiliateId]
+        `INSERT INTO tickets 
+        (pricing_id, transaction_id, buyer_id, owner_id, status${
+          affiliateId ? ", affiliate_id" : ""
+        }) 
+        VALUES ($1, $2, $3, $4, $5${affiliateId ? ", $6" : ""})`,
+        affiliateId
+          ? [pricingId, transactionId, userId, userId, "active", affiliateId]
+          : [pricingId, transactionId, userId, userId, "active"]
       );
     }
+
+    // Update available seats
+    await pool.query(
+      `UPDATE pricings SET available_seats = available_seats - $1 WHERE id = $2`,
+      [Number(numberOfTickets), pricingId]
+    );
+
+    // Update transactions
+    await pool.query(
+      `UPDATE transactions SET status = $1, modified_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
+      ["success", transactionId]
+    );
     await pool.query("COMMIT");
 
-    console.log("=======regime update=========");
+    // send mail with defined transport object
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error(`Error sending email: ${error.message}`);
+      }
+    });
 
-    console.log(regimeUpdate.rows[0]);
     return {
       status: 200,
       message: "Ticket Purchase Successful",

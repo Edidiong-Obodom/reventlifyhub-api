@@ -8,7 +8,7 @@ import * as nodemailer from "nodemailer";
 export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
   const user = req.user;
   const email = req.email;
-  const field = ["amount", "pricingId", "regimeId", "affiliate", "counter"];
+  const field = ["amount", "pricingId", "regimeId", "counter"];
 
   // check data for each field in the request query param and validate format
   const requiredFields = Helpers.requiredFields(req.body, field);
@@ -173,6 +173,24 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
       });
     }
 
+    const transaction = await pool.query(
+      `INSERT INTO transactions 
+      (client_id, regime_id, transaction_action, transaction_type, amount, currency, status, payment_gateway) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+      [
+        user,
+        regimeId,
+        "ticket-purchase",
+        "debit",
+        Number(amount * counter),
+        "ngn",
+        "pending",
+        "Paystack",
+      ]
+    );
+
+    const transactionId = transaction.rows[0].id;
+
     // params
     const params = JSON.stringify({
       email: email,
@@ -181,7 +199,11 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
         data: {
           regimeId: regimeId,
           pricingId: pricingId,
-          affiliateId: affiliate,
+          affiliateId:
+            affiliate && regime.rows[0].affiliate && affiliate !== user
+              ? affiliate
+              : "",
+          transactionId,
           buyerId: user,
           numberOfTickets: Number(counter),
           transactionType: "ticket-purchase",
@@ -199,9 +221,15 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
         "cache-control": "no-cache",
       },
     });
+    const url = response.data.data.authorization_url;
+    const parts = url.split("/");
+    await pool.query(
+      `UPDATE transactions SET transaction_reference = $1, modified_at = CURRENT_TIMESTAMP WHERE id = $2`,
+      [parts[parts.length - 1], transactionId]
+    );
 
     return res.status(200).json({
-      authorization_url: response.data.data.authorization_url,
+      authorization_url: url,
       data: {
         amount,
         pricingId,
