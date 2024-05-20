@@ -12,6 +12,7 @@ export interface ExtendedRequest extends Request {
     email: string;
     firstName: string;
     lastName: string;
+    userName: string;
     nationality: string;
     permissions: Permission; // Array of Permission objects
   }

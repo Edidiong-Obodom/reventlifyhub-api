@@ -35,10 +35,7 @@ export const ticket_purchase_paystackWebhook = async ({
 
     const { user_name, email } = clientDetails.rows[0];
 
-    const {
-      name,
-      affiliate_amount,
-    } = pricingDetails.rows[0];
+    const { name, affiliate_amount } = pricingDetails.rows[0];
     // Send email notification
     const transporter = nodemailer.createTransport(Helpers.mailCredentials);
 
@@ -78,6 +75,11 @@ export const ticket_purchase_paystackWebhook = async ({
         message:
           "The transaction status from Paystack is neither successful, failed, pending nor processed.",
       };
+    } else if (paymentStatus.toLowerCase() === "pending") {
+      return {
+        status: 400,
+        message: "Transaction pending...",
+      };
     } else if (paymentStatus.toLowerCase() === "failed") {
       await pool.query(
         `UPDATE transactions SET status = $1, modified_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
@@ -90,7 +92,7 @@ export const ticket_purchase_paystackWebhook = async ({
       };
     }
 
-    const { charge } = Helpers.chargeHandler(
+    const { charge, paystackCharge } = Helpers.chargeHandler(
       realAmount,
       Number(numberOfTickets),
       amount
@@ -100,7 +102,7 @@ export const ticket_purchase_paystackWebhook = async ({
       ? realAmount - (charge + affiliate_amount * Number(numberOfTickets))
       : realAmount - charge;
 
-    const companyMoney = charge;
+    const companyMoney = charge - (paystackCharge + 2.5);
     // Use Promise.all for Concurrent Operations
     await Promise.all([
       // credits regime

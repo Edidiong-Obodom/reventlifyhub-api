@@ -23,6 +23,7 @@ function authenticateToken(
       req.email = user.email;
       req.firstName = user.firstName;
       req.lastName = user.lastName;
+      req.userName = user.userName;
       req.nationality = user.nationality;
       req.permissions = user.permissions;
       next();

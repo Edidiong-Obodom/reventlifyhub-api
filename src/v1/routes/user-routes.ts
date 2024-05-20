@@ -4,29 +4,36 @@ import {
   createRegime,
   fetchImage,
   instagramBasicDisplayInit,
-  isLoggedIn,
   nameAvailability,
   ticketPurchase,
+  ticketTransfer,
 } from "../controllers/users/usersController";
 import { paystackWebhook } from "../controllers/users/payments";
 
 const router = Router();
 
+// ========== Services ========== 
 // Check regime name availability
 router.get("/regime/name/availability", authenticateToken, nameAvailability);
 
 // Create new regime
 router.post("/regime/create", authenticateToken, createRegime);
 
-// Create new regime
-router.post("/tickets/purchase", authenticateToken, ticketPurchase);
+// Ticket purchase
+router.post("/ticket/purchase", authenticateToken, ticketPurchase);
 
-// Payments
-router.post("/tickets/purchase/paystack-webhook", paystackWebhook);
+// Ticket transfer
+router.post("/ticket/transfer", authenticateToken, ticketTransfer);
+// ========== Services ========== 
 
-// Archive APIs
-router.get("/isloggedin", authenticateToken, isLoggedIn);
+
+// ========== Payments ==========
+router.post("/ticket/purchase/paystack-webhook", paystackWebhook);
+// ========== Payments ==========
+
+// ========== Archive APIs ==========
 router.post("/insta-init", authenticateToken, instagramBasicDisplayInit);
 router.get("/insta-images", authenticateToken, fetchImage);
+// ========== Archive APIs ==========
 
 export default router;
