@@ -157,6 +157,13 @@ const register = async (req: Request, res: Response) => {
         email,
       ]);
 
+      // checks if code was sent to the email
+      if (code.rows.length === 0) {
+        return res
+          .status(400)
+          .json({ message: "No code was sent to this email." });
+      }
+
       // checks if the code entered is valid
       if (code.rows[0].code !== feCode)
         return res.status(400).json({ message: "Incorrect Code." });

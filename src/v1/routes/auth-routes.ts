@@ -11,10 +11,10 @@ import {
 const router = Router();
 
 // sends verification code for reg
-router.post("/send-code", sendVerificationCode);
+router.post("/signup/send-code", sendVerificationCode);
 
 // registers user
-router.post("/register", register);
+router.post("/signup/register", register);
 
 // login user
 router.post("/login", login);
