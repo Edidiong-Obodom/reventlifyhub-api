@@ -166,6 +166,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
           amount,
           pricingId,
           regimeId,
+          transactionId,
           counter,
           available_tickets:
             parseFloat(regimePricing.rows[0].available_seats) - counter,
@@ -235,6 +236,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
         pricingId,
         regimeId,
         affiliate,
+        transactionId,
         counter,
         available_tickets: parseFloat(regimePricing.rows[0].available_seats),
       },

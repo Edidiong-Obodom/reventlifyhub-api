@@ -27,7 +27,9 @@ export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
   }
 
   if (user === beneficiary) {
-    return res.status(400).json({ message: "You already own this ticket." });
+    return res
+      .status(400)
+      .json({ message: "You can't share a ticket to yourself." });
   }
 
   const queryString = `SELECT 
@@ -47,10 +49,6 @@ export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
   try {
     const ticketDetails = await pool.query(queryString, [ticket]);
     const beneficiaryDetails = await Helpers.findUserById(beneficiary);
-    const currentDate = new Date();
-    const regimeStart = new Date(
-      ticketDetails.rows[0].start_date + " " + ticketDetails.rows[0].start_time
-    );
 
     if (beneficiaryDetails.rows.length === 0) {
       return res.status(400).json({ message: "User does not exist." });
@@ -59,6 +57,10 @@ export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
     if (ticketDetails.rows.length === 0) {
       return res.status(400).json({ message: "Ticket does not exist." });
     }
+    const currentDate = new Date();
+    const regimeStart = new Date(
+      ticketDetails.rows[0].start_date + " " + ticketDetails.rows[0].start_time
+    );
 
     if (currentDate > regimeStart) {
       return res.status(400).json({
@@ -106,6 +108,8 @@ export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
       },
     });
   } catch (error) {
+    console.log(error.message);
+    console.log(error);
     return res.status(500).json({ message: "Sorry, something went wrong." });
   }
 };
