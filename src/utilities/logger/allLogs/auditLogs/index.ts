@@ -1,5 +1,5 @@
 import { Request } from "express";
-import clientPromise from "../../../../monogDB";
+import clientPromise from "../../../../mongoDB";
 import { AuditLogs } from "./auditLogs";
 import { ExtendedRequest } from "../../../authenticateToken/authenticateToken.dto";
 import IPinfoWrapper, { IPinfo } from "node-ipinfo";

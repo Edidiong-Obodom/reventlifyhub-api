@@ -1,39 +1,39 @@
 import { capitalize } from "lodash";
 import Log from "../..";
 import clientPromise from "../../../../mongoDB";
-import { TicketEditLogs } from "./ticketEditLogs";
 import { ReturnResponse } from "../allLogs";
 import { getClientIp } from "../auditLogs";
+import { EventEditLogs } from "./eventEditLogs";
 
 export const ticketEditLogs = async (
   { req, res, logResponse, logStatusCode, endPoint }: ReturnResponse,
   {
-    sender,
-    beneficiary,
+    actor,
+    eventName,
     status,
     ticket,
     errorMessage,
     date,
-    name,
-  }: TicketEditLogs
+    action,
+  }: EventEditLogs
 ) => {
   const client = await clientPromise;
   const db = client.db(process.env.MONGODB_DB);
 
-  // insert ticket edit into logs
-  await db.collection("ticketEditLogs").insertOne({
-    sender,
-    beneficiary,
+  // insert event edit into logs
+  await db.collection("eventEditLogs").insertOne({
+    actor,
+    eventName,
     ticket,
     status,
     errorMessage,
     date,
-    name,
+    action,
   });
 
   // Also respond and auto log if you want
   if (res) {
-    const actionSplit = name.split(" ");
+    const actionSplit = action.split(" ");
     const { ip, ipLookUp } = await getClientIp(req);
     const {
       city,
@@ -48,8 +48,8 @@ export const ticketEditLogs = async (
     } = ipLookUp;
 
     await Log.auditLogs({
-      user: sender,
-      action: name,
+      user: actor,
+      action,
       details: errorMessage || status,
       endPoint: endPoint || `api/v1/user/ticket/${actionSplit[1]}`,
       date,
