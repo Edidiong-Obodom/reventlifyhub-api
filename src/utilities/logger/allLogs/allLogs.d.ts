@@ -4,7 +4,7 @@ import { IPinfo } from "node-ipinfo";
 
 export interface MetaData {
   ipAddress?: string | string[];
-  location?: IPinfo;
+  location?: Partial<IPinfo>;
 }
 
 export interface ReturnResponse {

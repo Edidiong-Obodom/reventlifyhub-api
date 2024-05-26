@@ -35,6 +35,29 @@ export const ticketEditLogs = async (
   if (res) {
     const actionSplit = name.split(" ");
     const { ip, ipLookUp } = getClientIp(req);
+    const {
+      city,
+      region,
+      country,
+      continent,
+      org,
+      timezone,
+      countryCode,
+      countryCurrency,
+    } = ipLookUp;
+    console.log("check");
+
+    console.log(
+      city,
+      region,
+      country,
+      continent,
+      org,
+      timezone,
+      countryCode,
+      countryCurrency
+    );
+
     await Log.auditLogs({
       user: sender,
       action: name,
@@ -43,7 +66,16 @@ export const ticketEditLogs = async (
       date,
       metaData: {
         ipAddress: ip,
-        location: ipLookUp,
+        location: {
+          city,
+          region,
+          country,
+          continent,
+          org,
+          timezone,
+          countryCode,
+          countryCurrency,
+        },
       },
     });
     res
