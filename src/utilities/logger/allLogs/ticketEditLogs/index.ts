@@ -39,24 +39,13 @@ export const ticketEditLogs = async (
       city,
       region,
       country,
+      loc,
       continent,
       org,
       timezone,
       countryCode,
       countryCurrency,
     } = ipLookUp;
-    console.log("check");
-
-    console.log(
-      city,
-      region,
-      country,
-      continent,
-      org,
-      timezone,
-      countryCode,
-      countryCurrency
-    );
 
     await Log.auditLogs({
       user: sender,
@@ -70,6 +59,7 @@ export const ticketEditLogs = async (
           city,
           region,
           country,
+          loc,
           continent,
           org,
           timezone,

@@ -6,7 +6,7 @@ import IPinfoWrapper, { IPinfo } from "node-ipinfo";
 
 export const getClientIp = (req: Request | ExtendedRequest) => {
   const forwarded = req.headers["x-forwarded-for"];
-  const ipinfoWrapper = new IPinfoWrapper(process.env.IPINFO_TOKEN);
+  const ipInfoWrapper = new IPinfoWrapper(process.env.IPINFO_TOKEN);
   let ip: string;
 
   if (forwarded && typeof forwarded === "string") {
@@ -17,10 +17,7 @@ export const getClientIp = (req: Request | ExtendedRequest) => {
     ip = req.ip;
   }
 
-  return ipinfoWrapper.lookupIp(ip).then((response: IPinfo) => {
-    console.log("response ip");
-    console.log(response);
-
+  return ipInfoWrapper.lookupIp(ip).then((response: IPinfo) => {
     return {
       ip: ip,
       ipLookUp: response,
