@@ -8,7 +8,6 @@ export const getClientIp = (req: Request | ExtendedRequest) => {
   const forwarded = req.headers["x-forwarded-for"];
   const ipinfoWrapper = new IPinfoWrapper(process.env.IPINFO_TOKEN);
   let ip: string;
-  let ipLookUp: IPinfo;
 
   if (forwarded && typeof forwarded === "string") {
     ip = forwarded.split(",")[0];
@@ -18,17 +17,15 @@ export const getClientIp = (req: Request | ExtendedRequest) => {
     ip = req.ip;
   }
 
-  ipinfoWrapper.lookupIp(ip).then((response: IPinfo) => {
-    console.log("respone ip");
+  return ipinfoWrapper.lookupIp(ip).then((response: IPinfo) => {
+    console.log("response ip");
     console.log(response);
 
-    ipLookUp = response;
+    return {
+      ip: ip,
+      ipLookUp: response,
+    };
   });
-
-  return {
-    ip: ip,
-    ipLookUp: ipLookUp,
-  };
 };
 
 export const auditLogs = async ({

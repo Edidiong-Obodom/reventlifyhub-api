@@ -34,7 +34,7 @@ export const ticketEditLogs = async (
   // Also a response and auto log if you want
   if (res) {
     const actionSplit = name.split(" ");
-    const { ip, ipLookUp } = getClientIp(req);
+    const { ip, ipLookUp } = await getClientIp(req);
     const {
       city,
       region,
