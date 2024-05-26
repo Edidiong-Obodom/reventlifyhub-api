@@ -21,14 +21,13 @@ export const getClientIp = (req: Request | ExtendedRequest) => {
   ipinfoWrapper.lookupIp(ip).then((response: IPinfo) => {
     console.log("respone ip");
     console.log(response);
-    
-    
+
     ipLookUp = response;
   });
 
   return {
     ip: ip,
-    ipLookUp,
+    ipLookUp: ipLookUp,
   };
 };
 
