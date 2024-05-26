@@ -4,10 +4,12 @@ import { ExtendedRequest } from "../../../../../../utilities/authenticateToken/a
 import * as Helpers from "../../../../../../helpers";
 import { pool } from "../../../../../../db";
 import { capitalize } from "lodash";
+import Log from "../../../../../../utilities/logger";
 
 export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
   const { user, userName } = req;
   const fields = ["beneficiary", "ticket"];
+  const currentDate = new Date();
 
   // check data for each field in the request query param and validate format
   const requiredFields = Helpers.requiredFields(req.body, fields);
@@ -27,9 +29,19 @@ export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
   }
 
   if (user === beneficiary) {
-    return res
-      .status(400)
-      .json({ message: "You can't share a ticket to yourself." });
+    // insert ticket edit into logs
+    return await Log.ticketEditLogs(
+      { req, res },
+      {
+        sender: user,
+        beneficiary,
+        ticket,
+        status: "failed",
+        errorMessage: "You can't share a ticket to yourself.",
+        date: currentDate,
+        name: "Ticket transfer",
+      }
+    );
   }
 
   const queryString = `SELECT 
@@ -51,21 +63,54 @@ export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
     const beneficiaryDetails = await Helpers.findUserById(beneficiary);
 
     if (beneficiaryDetails.rows.length === 0) {
-      return res.status(400).json({ message: "User does not exist." });
+      // insert ticket edit into logs
+      return await Log.ticketEditLogs(
+        { req, res },
+        {
+          sender: user,
+          beneficiary,
+          ticket,
+          status: "failed",
+          errorMessage: "User does not exist.",
+          date: currentDate,
+          name: "Ticket transfer",
+        }
+      );
     }
 
     if (ticketDetails.rows.length === 0) {
-      return res.status(400).json({ message: "Ticket does not exist." });
+      // insert ticket edit into logs
+      return await Log.ticketEditLogs(
+        { req, res },
+        {
+          sender: user,
+          beneficiary,
+          ticket,
+          status: "failed",
+          errorMessage: "Ticket does not exist.",
+          date: currentDate,
+          name: "Ticket transfer",
+        }
+      );
     }
-    const currentDate = new Date();
     const regimeStart = new Date(
       ticketDetails.rows[0].start_date + " " + ticketDetails.rows[0].start_time
     );
 
     if (currentDate > regimeStart) {
-      return res.status(400).json({
-        message: "You can't share a ticket after the event has started.",
-      });
+      // insert ticket edit into logs
+      return await Log.ticketEditLogs(
+        { req, res },
+        {
+          sender: user,
+          beneficiary,
+          ticket,
+          status: "failed",
+          errorMessage: "You can't share a ticket after the event has started.",
+          date: currentDate,
+          name: "Ticket transfer",
+        }
+      );
     }
 
     await pool.query(
@@ -98,18 +143,43 @@ export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
       }
     });
 
-    return res.status(200).json({
-      message: `Ticket transfer successful, ${capitalize(
-        beneficiaryDetails.rows[0].user_name
-      )} now owns this ticket`,
-      data: {
-        ticket,
-        beneficiary,
+    // insert ticket edit into logs
+    return await Log.ticketEditLogs(
+      {
+        req,
+        res,
+        logResponse: {
+          message: `Ticket transfer successful, ${capitalize(
+            beneficiaryDetails.rows[0].user_name
+          )} now owns this ticket`,
+          data: {
+            ticket,
+            beneficiary,
+          },
+        },
       },
-    });
+      {
+        sender: user,
+        beneficiary,
+        ticket,
+        status: "success",
+        date: currentDate,
+        name: "Ticket transfer",
+      }
+    );
   } catch (error) {
-    console.log(error.message);
-    console.log(error);
-    return res.status(500).json({ message: "Sorry, something went wrong." });
+    // insert ticket edit into logs
+    return await Log.ticketEditLogs(
+      { req, res, logStatusCode: 500 },
+      {
+        sender: user,
+        beneficiary,
+        ticket,
+        status: "failed",
+        errorMessage: error.message,
+        date: currentDate,
+        name: "Ticket transfer",
+      }
+    );
   }
 };
