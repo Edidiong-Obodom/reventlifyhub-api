@@ -19,6 +19,10 @@ export const getClientIp = (req: Request | ExtendedRequest) => {
   }
 
   ipinfoWrapper.lookupIp(ip).then((response: IPinfo) => {
+    console.log("respone ip");
+    console.log(response);
+    
+    
     ipLookUp = response;
   });
 
