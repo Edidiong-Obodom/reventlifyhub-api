@@ -14,6 +14,8 @@ import rateLimit from "express-rate-limit";
 
 const port = process.env.PORT || 5000;
 const app = express();
+// Set the trust proxy setting
+app.set('trust proxy', true);
 const whitelist =
   process.env.NODE_ENV !== "production"
     ? "*"
@@ -30,6 +32,9 @@ const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
   message: "Too many requests from this IP, please try again later.",
+  keyGenerator: (req, res) => {
+    return req.ip;
+  },
 });
 
 //middlewares// Conditional middleware for HSTS based on environment
