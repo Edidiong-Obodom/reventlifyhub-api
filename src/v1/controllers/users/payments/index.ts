@@ -49,20 +49,23 @@ export const paystackWebhook = async (req: Request, res: Response) => {
           transactionType,
         });
 
-        await Log.auditLogs({
-          user: "api.paystack.co",
-          action: "Ticket Purchase Paystack",
-          details: ticketPurchase.message,
-          endPoint: "api/v1/user/ticket/purchase/paystack-webhook",
-          date: currentDate,
-          metaData: {
-            ipAddress: ip,
-            location: ipLookUp,
+        return await Log.paystackEditLogs(
+          {
+            req,
+            res,
+            logResponse: ticketPurchase.message,
+            logStatusCode: ticketPurchase.status,
           },
-        });
-        return res
-          .status(ticketPurchase.status)
-          .json({ message: ticketPurchase.message });
+          {
+            actor: "api.paystack.co",
+            regimeId,
+            pricingId,
+            transactionId,
+            status: ticketPurchase.status === 200 ? "success" : "failed",
+            date: currentDate,
+            action: "Ticket Purchase Paystack",
+          }
+        );
       }
     } else {
       await Log.auditLogs({
@@ -83,8 +86,17 @@ export const paystackWebhook = async (req: Request, res: Response) => {
       });
     }
   } catch (error) {
-    console.log(error);
-    console.log(error.message);
+    await Log.auditLogs({
+      user: ip,
+      action: "Ticket Purchase Paystack",
+      details: error.message,
+      endPoint: "api/v1/user/ticket/purchase/paystack-webhook",
+      date: currentDate,
+      metaData: {
+        ipAddress: ip,
+        location: ipLookUp,
+      },
+    });
     return res.status(500).json({ message: "Oops something went wrong..." });
   }
 };
