@@ -15,11 +15,16 @@ import rateLimit from "express-rate-limit";
 const port = process.env.PORT || 5000;
 const app = express();
 // Set the trust proxy setting
-app.set('trust proxy', true);
+app.set("trust proxy", true);
 const whitelist =
   process.env.NODE_ENV !== "production"
     ? "*"
-    : ["https://admin.socket.io", process.env.URL, "api.paystack.co"];
+    : [
+        "https://admin.socket.io",
+        process.env.URL,
+        "https://api.paystack.co",
+        "https://paystack.com",
+      ];
 
 const corsOptions = {
   optionsSuccessStatus: 200,
