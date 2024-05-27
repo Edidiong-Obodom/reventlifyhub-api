@@ -1,8 +1,12 @@
 import { Request, Response } from "express";
 import { createHmac } from "node:crypto";
 import * as tickets from "./tickets";
+import Log from "../../../../utilities/logger";
+import { getClientIp } from "../../../../utilities/logger/allLogs";
 
 export const paystackWebhook = async (req: Request, res: Response) => {
+  const currentDate = new Date();
+  const { ip, ipLookUp } = await getClientIp(req);
   const secret = process.env.PAYSTACK_SECRET_KEY;
   const hash = createHmac("sha512", secret)
     .update(JSON.stringify(req.body))
@@ -45,11 +49,34 @@ export const paystackWebhook = async (req: Request, res: Response) => {
           transactionType,
         });
 
+        await Log.auditLogs({
+          user: "api.paystack.co",
+          action: "Ticket Purchase Paystack",
+          details: ticketPurchase.message,
+          endPoint: "api/v1/user/ticket/purchase/paystack-webhook",
+          date: currentDate,
+          metaData: {
+            ipAddress: ip,
+            location: ipLookUp,
+          },
+        });
         return res
           .status(ticketPurchase.status)
           .json({ message: ticketPurchase.message });
       }
     } else {
+      await Log.auditLogs({
+        user: ip,
+        action: "Ticket Purchase Paystack",
+        details:
+          "Get a life, stealing is not good. Go and learn a decent skill or trade or something... 😒👎",
+        endPoint: "api/v1/user/ticket/purchase/paystack-webhook",
+        date: currentDate,
+        metaData: {
+          ipAddress: ip,
+          location: ipLookUp,
+        },
+      });
       return res.status(400).json({
         message:
           "Get a life, stealing is not good. Go and learn a decent skill or trade or something... 😒👎",

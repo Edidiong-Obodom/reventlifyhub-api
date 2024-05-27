@@ -5,9 +5,13 @@ import { Login } from "./index.dto";
 import { pool } from "../../../../../db";
 import { JwtPayload } from "jsonwebtoken";
 import * as jwt from "jsonwebtoken";
+import Log from "../../../../../utilities/logger";
+import { getClientIp } from "../../../../../utilities/logger/allLogs";
 
 const login = async (req: Request, res: Response) => {
   const requiredFields = ["email", "password"];
+  const currentDate = new Date();
+  const { ip, ipLookUp } = await getClientIp(req);
 
   // check data for each field in the body and validate format
   for (const field of requiredFields) {
@@ -22,6 +26,17 @@ const login = async (req: Request, res: Response) => {
 
   // Check if there are any additional properties in the request body
   if (Object.keys(rest).length > 0) {
+    await Log.auditLogs({
+      user: email,
+      action: "Login",
+      details: "Additional properties in the request body are not allowed.",
+      endPoint: "api/v1/auth/login",
+      date: currentDate,
+      metaData: {
+        ipAddress: ip,
+        location: ipLookUp,
+      },
+    });
     return res.status(400).json({
       message: "Additional properties in the request body are not allowed.",
     });
@@ -29,6 +44,17 @@ const login = async (req: Request, res: Response) => {
 
   // email validation
   if (!Helpers.emailRegex.test(email)) {
+    await Log.auditLogs({
+      user: email,
+      action: "Login",
+      details: "Invalid email format.",
+      endPoint: "api/v1/auth/login",
+      date: currentDate,
+      metaData: {
+        ipAddress: ip,
+        location: ipLookUp,
+      },
+    });
     return res.status(400).json({ message: "Invalid email format." });
   }
 
@@ -39,6 +65,17 @@ const login = async (req: Request, res: Response) => {
     ]);
 
     if (!user.rows[0]) {
+      await Log.auditLogs({
+        user: email,
+        action: "Login",
+        details: "User does not exist.",
+        endPoint: "api/v1/auth/login",
+        date: currentDate,
+        metaData: {
+          ipAddress: ip,
+          location: ipLookUp,
+        },
+      });
       return res.status(401).json({ message: "User does not exist." });
     }
 
@@ -49,6 +86,17 @@ const login = async (req: Request, res: Response) => {
     );
 
     if (!passwordIsValid) {
+      await Log.auditLogs({
+        user: email,
+        action: "Login",
+        details: "Invalid password.",
+        endPoint: "api/v1/auth/login",
+        date: currentDate,
+        metaData: {
+          ipAddress: ip,
+          location: ipLookUp,
+        },
+      });
       return res.status(401).json({ message: "Invalid password." });
     }
 
@@ -69,14 +117,36 @@ const login = async (req: Request, res: Response) => {
     // Gets token expiry date
     const expiresAt = jwt.decode(token) as JwtPayload;
 
+    await Log.auditLogs({
+      user: userData.email,
+      action: "Login",
+      details: "success",
+      endPoint: "api/v1/auth/login",
+      date: currentDate,
+      metaData: {
+        ipAddress: ip,
+        location: ipLookUp,
+      },
+    });
+
     return res.status(200).json({
       auth: true,
       expiresAt: expiresAt.exp,
       user: { ...userData, token },
     });
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Internal Server Error!" });
+    await Log.auditLogs({
+      user: email,
+      action: "Login",
+      details: error.message,
+      endPoint: "api/v1/auth/login",
+      date: currentDate,
+      metaData: {
+        ipAddress: ip,
+        location: ipLookUp,
+      },
+    });
+    return res.status(500).json({ message: "Oops something went wrong..." });
   }
 };
 

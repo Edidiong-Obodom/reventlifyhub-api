@@ -9,15 +9,16 @@ import {
   ticketTransfer,
 } from "../controllers/users/usersController";
 import { paystackWebhook } from "../controllers/users/payments";
+import { allRateLimiter } from "../../utilities/rate-limit/all-rate-limit";
 
 const router = Router();
 
 // ========== Services ========== 
 // Check regime name availability
-router.get("/regime/name/availability", authenticateToken, nameAvailability);
+router.get("/regime/name/availability", authenticateToken, allRateLimiter, nameAvailability);
 
 // Create new regime
-router.post("/regime/create", authenticateToken, createRegime);
+router.post("/regime/create", authenticateToken, allRateLimiter, createRegime);
 
 // Ticket purchase
 router.post("/ticket/purchase", authenticateToken, ticketPurchase);

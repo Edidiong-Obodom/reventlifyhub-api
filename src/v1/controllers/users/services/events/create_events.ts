@@ -7,10 +7,14 @@ import * as bcrypt from "bcrypt";
 import cloudinary from "../../../../../utilities/cloudinary";
 import { CreateRegimeType } from "./create_events_types";
 import moment from "moment";
+import { getClientIp } from "../../../../../utilities/logger/allLogs";
+import Log from "../../../../../utilities/logger";
 
 // Check for regime name availability
 export const nameAvailability = async (req: ExtendedRequest, res: Response) => {
   const field = ["regimeName"];
+  const currentDate = new Date();
+  const { ip, ipLookUp } = await getClientIp(req);
 
   // check data for each field in the request query param and validate format
   const requiredFields = Helpers.requiredFields(
@@ -27,8 +31,20 @@ export const nameAvailability = async (req: ExtendedRequest, res: Response) => {
   // Check if there are any additional properties in the request query param
   const extraFields = Helpers.noExtraFields(rest, "Query param");
 
-  if (!extraFields.success)
+  if (!extraFields.success) {
+    await Log.auditLogs({
+      user: req.email,
+      action: "Regime Name Availability",
+      details: extraFields.message,
+      endPoint: "api/v1/user/regime/name/availability",
+      date: currentDate,
+      metaData: {
+        ipAddress: ip,
+        location: ipLookUp,
+      },
+    });
     return res.status(400).json({ message: extraFields.message });
+  }
 
   const user = req.user;
 
@@ -55,20 +71,74 @@ export const nameAvailability = async (req: ExtendedRequest, res: Response) => {
       );
 
       if (nameCheck1.rows.length === 0) {
+        await Log.auditLogs({
+          user: req.email,
+          action: "Regime Name Availability",
+          details: "Regime name already in use by another creator",
+          endPoint: "api/v1/user/regime/name/availability",
+          date: currentDate,
+          metaData: {
+            ipAddress: ip,
+            location: ipLookUp,
+          },
+        });
         return res
           .status(409)
           .json({ message: "Regime name already in use by another creator" });
       } else if (nameCheck1.rows.length > 0 && currentDate < endDate) {
+        await Log.auditLogs({
+          user: req.email,
+          action: "Regime Name Availability",
+          details: `Your regime ${nameCheck1.rows[0].name} is still ongoing, you can't create another with the same name until the current regime ends. `,
+          endPoint: "api/v1/user/regime/name/availability",
+          date: currentDate,
+          metaData: {
+            ipAddress: ip,
+            location: ipLookUp,
+          },
+        });
         return res.status(409).json({
           message: `Your regime ${nameCheck1.rows[0].name} is still ongoing, you can't create another with the same name until the current regime ends. `,
         });
       } else {
+        await Log.auditLogs({
+          user: req.email,
+          action: "Regime Name Availability",
+          details: `success`,
+          endPoint: "api/v1/user/regime/name/availability",
+          date: currentDate,
+          metaData: {
+            ipAddress: ip,
+            location: ipLookUp,
+          },
+        });
         return res.status(200).json({ message: "Regime name is free for use" });
       }
     }
+    await Log.auditLogs({
+      user: req.email,
+      action: "Regime Name Availability",
+      details: "Regime name does not exist",
+      endPoint: "api/v1/user/regime/name/availability",
+      date: currentDate,
+      metaData: {
+        ipAddress: ip,
+        location: ipLookUp,
+      },
+    });
     return res.status(200).json({ message: "Regime name does not exist" });
   } catch (error) {
-    console.log(error.message);
+    await Log.auditLogs({
+      user: req.email,
+      action: "Regime Name Availability",
+      details: error.message,
+      endPoint: "api/v1/user/regime/name/availability",
+      date: currentDate,
+      metaData: {
+        ipAddress: ip,
+        location: ipLookUp,
+      },
+    });
     return res.status(500).json({ message: "Oops something went wrong..." });
   }
 };
@@ -77,6 +147,8 @@ export const nameAvailability = async (req: ExtendedRequest, res: Response) => {
 export const createRegime = async (req: ExtendedRequest, res: Response) => {
   const userId = req.user;
   const email = req.email;
+  const currentDate = new Date();
+  const { ip, ipLookUp } = await getClientIp(req);
   let userName = null;
 
   const userData = await Helpers.findUserById(userId);
@@ -128,6 +200,17 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
 
   // Check if regimeType is valid
   if (!regimeTypeValid.status) {
+    await Log.auditLogs({
+      user: req.email,
+      action: "Regime Create",
+      details: regimeTypeValid.message,
+      endPoint: "api/v1/user/regime/create",
+      date: currentDate,
+      metaData: {
+        ipAddress: ip,
+        location: ipLookUp,
+      },
+    });
     return res.status(400).json({ message: regimeTypeValid.message });
   }
 
@@ -138,16 +221,39 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
     !Helpers.februaryCheck(regimeStartDate) ||
     !Helpers.februaryCheck(regimeEndDate)
   ) {
+    await Log.auditLogs({
+      user: req.email,
+      action: "Regime Create",
+      details:
+        "Your endDate or startDate must match the YYYY-MM-DD format i.e 2023-05-19",
+      endPoint: "api/v1/user/regime/create",
+      date: currentDate,
+      metaData: {
+        ipAddress: ip,
+        location: ipLookUp,
+      },
+    });
     return res.status(400).json({
       message:
         "Your endDate or startDate must match the YYYY-MM-DD format i.e 2023-05-19",
     });
   }
 
-  const currentDate = new Date();
   const start = new Date(regimeStartDate);
   const end = new Date(regimeEndDate);
   if (currentDate > start || currentDate > end) {
+    await Log.auditLogs({
+      user: req.email,
+      action: "Regime Create",
+      details:
+        "Your event startDate or endDate must not be a day or more behind the current date",
+      endPoint: "api/v1/user/regime/create",
+      date: currentDate,
+      metaData: {
+        ipAddress: ip,
+        location: ipLookUp,
+      },
+    });
     return res.status(400).json({
       message:
         "Your event startDate or endDate must not be a day or more behind the current date",
@@ -159,6 +265,18 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
     !Helpers.allowedTimeFormat.test(regimeStartTime) ||
     !Helpers.allowedTimeFormat.test(regimeEndTime)
   ) {
+    await Log.auditLogs({
+      user: req.email,
+      action: "Regime Create",
+      details:
+        "Your endTime or startTime must match the HH:MM:SS 24hrs format i.e 23:04:00",
+      endPoint: "api/v1/user/regime/create",
+      date: currentDate,
+      metaData: {
+        ipAddress: ip,
+        location: ipLookUp,
+      },
+    });
     return res.status(400).json({
       message:
         "Your endTime or startTime must match the HH:MM:SS 24hrs format i.e 23:04:00",
@@ -179,8 +297,20 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
   // Check if there are any additional properties in the request body
   const extraFields = Helpers.noExtraFields(rest);
 
-  if (!extraFields.success)
+  if (!extraFields.success) {
+    await Log.auditLogs({
+      user: req.email,
+      action: "Regime Create",
+      details: extraFields.message,
+      endPoint: "api/v1/user/regime/create",
+      date: currentDate,
+      metaData: {
+        ipAddress: ip,
+        location: ipLookUp,
+      },
+    });
     return res.status(400).json({ message: extraFields.message });
+  }
 
   const pricingFields = [
     "pricingName",
@@ -192,17 +322,42 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
   const pricingValidationResult: string[] = [];
 
   // checks to see if all the regime's pricing matches the required format
-  if (regimePricing.length > 10)
+  if (regimePricing.length > 10) {
+    await Log.auditLogs({
+      user: req.email,
+      action: "Regime Create",
+      details: "You cannot have more than 10 pricings for one event.",
+      endPoint: "api/v1/user/regime/create",
+      date: currentDate,
+      metaData: {
+        ipAddress: ip,
+        location: ipLookUp,
+      },
+    });
     return res.status(400).json({
       message: "You cannot have more than 10 pricings for one event.",
     });
+  }
 
   // checks to see if all the regime's pricing matches the required format
-  if (regimePricing.length === 0)
+  if (regimePricing.length === 0) {
+    await Log.auditLogs({
+      user: req.email,
+      action: "Regime Create",
+      details:
+        "You cannot have 0 pricings for an event, even if it's a free event make one pricing and make the pricing amount 0.",
+      endPoint: "api/v1/user/regime/create",
+      date: currentDate,
+      metaData: {
+        ipAddress: ip,
+        location: ipLookUp,
+      },
+    });
     return res.status(400).json({
       message:
         "You cannot have 0 pricings for an event, even if it's a free event make one pricing and make the pricing amount 0.",
     });
+  }
 
   regimePricing.map(async (price, i) => {
     const pricingFieldCheck = Helpers.requiredFields(
@@ -237,6 +392,17 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
   });
 
   if (pricingValidationResult.length > 0) {
+    await Log.auditLogs({
+      user: req.email,
+      action: "Regime Create",
+      details: pricingValidationResult[0],
+      endPoint: "api/v1/user/regime/create",
+      date: currentDate,
+      metaData: {
+        ipAddress: ip,
+        location: ipLookUp,
+      },
+    });
     return res.status(400).json({
       message: pricingValidationResult[0],
     });
@@ -250,13 +416,36 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       regimeName.trim()
     );
 
-    if (!nameCheckResult)
+    if (!nameCheckResult) {
+      await Log.auditLogs({
+        user: req.email,
+        action: "Regime Create",
+        details: "Regime name already in use.",
+        endPoint: "api/v1/user/regime/create",
+        date: currentDate,
+        metaData: {
+          ipAddress: ip,
+          location: ipLookUp,
+        },
+      });
       return res.status(409).json({ message: "Regime name already in use." });
+    }
 
     // Checks media file size
-    if (Helpers.sizeChecker(regimeMediaBase64).MB > 10)
+    if (Helpers.sizeChecker(regimeMediaBase64).MB > 10) {
+      await Log.auditLogs({
+        user: req.email,
+        action: "Regime Create",
+        details: "Media larger than 10MB",
+        endPoint: "api/v1/user/regime/create",
+        date: currentDate,
+        metaData: {
+          ipAddress: ip,
+          location: ipLookUp,
+        },
+      });
       return res.status(400).json("Media larger than 10MB");
-
+    }
     // Use Promise.all for Concurrent Operations
     const [hashedPin, resultOfUpdate] = await Promise.all([
       bcrypt.hash(regimeWithdrawalPin, 10),
@@ -295,7 +484,6 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
     );
 
     // creates all the regime's pricing
-    // regimePricing.map(async (price) => {
     for (const price of regimePricing) {
       await pool.query(
         `INSERT INTO pricings(regime_id, name, total_seats, available_seats, amount, affiliate_amount) 
@@ -343,10 +531,31 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
               thank you for choosing <strong>Reventlify</strong>.</p>`,
     });
 
+    await Log.auditLogs({
+      user: req.email,
+      action: "Regime Create",
+      details: "success",
+      endPoint: "api/v1/user/regime/create",
+      date: currentDate,
+      metaData: {
+        ipAddress: ip,
+        location: ipLookUp,
+      },
+    });
     return res.status(200).json({ "Regime Creation": "Successful!" });
   } catch (error) {
-    console.log(error);
     await pool.query("ROLLBACK");
+    await Log.auditLogs({
+      user: req.email,
+      action: "Regime Create",
+      details: error.message,
+      endPoint: "api/v1/user/regime/create",
+      date: currentDate,
+      metaData: {
+        ipAddress: ip,
+        location: ipLookUp,
+      },
+    });
     return res.status(500).json(error.message);
   }
 };
