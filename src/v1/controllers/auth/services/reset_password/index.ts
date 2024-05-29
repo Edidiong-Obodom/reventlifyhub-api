@@ -28,7 +28,7 @@ const sendPWResetCode = async (req: Request, res: Response) => {
       user: email,
       action: "Password Reset Code",
       details: extraFields.message,
-      endPoint: "api/v1/auth/pw-reset-code",
+      endPoint: "v1/auth/pw-reset-code",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -51,7 +51,7 @@ const sendPWResetCode = async (req: Request, res: Response) => {
         user: email,
         action: "Password Reset Code",
         details: "User does not exist!",
-        endPoint: "api/v1/auth/pw-reset-code",
+        endPoint: "v1/auth/pw-reset-code",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -89,7 +89,7 @@ const sendPWResetCode = async (req: Request, res: Response) => {
       user: email,
       action: "Password Reset Code",
       details: "success",
-      endPoint: "api/v1/auth/pw-reset-code",
+      endPoint: "v1/auth/pw-reset-code",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -106,7 +106,7 @@ const sendPWResetCode = async (req: Request, res: Response) => {
       user: email,
       action: "Password Reset Code",
       details: error.message,
-      endPoint: "api/v1/auth/pw-reset-code",
+      endPoint: "v1/auth/pw-reset-code",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -150,7 +150,7 @@ export const verifyPwResetCode = async (req: Request, res: Response) => {
       user: email,
       action: "Password Reset Code Verify",
       details: extraFields.message,
-      endPoint: "api/v1/auth/pw-reset-code/verify",
+      endPoint: "v1/auth/pw-reset-code/verify",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -170,7 +170,7 @@ export const verifyPwResetCode = async (req: Request, res: Response) => {
         user: email,
         action: "Password Reset Code Verify",
         details: "User does not exist!",
-        endPoint: "api/v1/auth/pw-reset-code/verify",
+        endPoint: "v1/auth/pw-reset-code/verify",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -193,7 +193,7 @@ export const verifyPwResetCode = async (req: Request, res: Response) => {
         action: "Password Reset Code Verify",
         details:
           "You have made no request to reset your password so no reset code exist.",
-        endPoint: "api/v1/auth/pw-reset-code/verify",
+        endPoint: "v1/auth/pw-reset-code/verify",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -212,7 +212,7 @@ export const verifyPwResetCode = async (req: Request, res: Response) => {
         user: email,
         action: "Password Reset Code Verify",
         details: "Incorrect Code.",
-        endPoint: "api/v1/auth/pw-reset-code/verify",
+        endPoint: "v1/auth/pw-reset-code/verify",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -233,7 +233,7 @@ export const verifyPwResetCode = async (req: Request, res: Response) => {
       user: email,
       action: "Password Reset Code Verify",
       details: "success",
-      endPoint: "api/v1/auth/pw-reset-code/verify",
+      endPoint: "v1/auth/pw-reset-code/verify",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -246,7 +246,7 @@ export const verifyPwResetCode = async (req: Request, res: Response) => {
       user: email,
       action: "Password Reset Code Verify",
       details: error.message,
-      endPoint: "api/v1/auth/pw-reset-code/verify",
+      endPoint: "v1/auth/pw-reset-code/verify",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -286,7 +286,7 @@ const resetPW = async (req: Request, res: Response) => {
       user: email,
       action: "Password Reset",
       details: extraFields.message,
-      endPoint: "api/v1/auth/pw-reset",
+      endPoint: "v1/auth/pw-reset",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -302,7 +302,7 @@ const resetPW = async (req: Request, res: Response) => {
       user: email,
       action: "Password Reset",
       details: "Password must have a minimum of 8 characters.",
-      endPoint: "api/v1/auth/pw-reset",
+      endPoint: "v1/auth/pw-reset",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -325,7 +325,7 @@ const resetPW = async (req: Request, res: Response) => {
         user: email,
         action: "Password Reset",
         details: "User does not exist!",
-        endPoint: "api/v1/auth/pw-reset",
+        endPoint: "v1/auth/pw-reset",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -348,7 +348,7 @@ const resetPW = async (req: Request, res: Response) => {
         action: "Password Reset",
         details:
           "You have made no request to reset your password so no reset code exist.",
-        endPoint: "api/v1/auth/pw-reset",
+        endPoint: "v1/auth/pw-reset",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -368,7 +368,7 @@ const resetPW = async (req: Request, res: Response) => {
         action: "Password Reset",
         details:
           "Can't reset password since the password reset code hasn't been verified",
-        endPoint: "api/v1/auth/pw-reset",
+        endPoint: "v1/auth/pw-reset",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -397,7 +397,7 @@ const resetPW = async (req: Request, res: Response) => {
       user: email,
       action: "Password Reset",
       details: "success",
-      endPoint: "api/v1/auth/pw-reset",
+      endPoint: "v1/auth/pw-reset",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -413,7 +413,7 @@ const resetPW = async (req: Request, res: Response) => {
       user: email,
       action: "Password Reset",
       details: error.message,
-      endPoint: "api/v1/auth/pw-reset",
+      endPoint: "v1/auth/pw-reset",
       date: currentDate,
       metaData: {
         ipAddress: ip,

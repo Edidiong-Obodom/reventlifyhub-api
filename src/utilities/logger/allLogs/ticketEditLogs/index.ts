@@ -51,7 +51,7 @@ export const ticketEditLogs = async (
       user: sender,
       action: name,
       details: errorMessage || status,
-      endPoint: endPoint || `api/v1/user/ticket/${actionSplit[1]}`,
+      endPoint: endPoint || `v1/user/ticket/${actionSplit[1]}`,
       date,
       metaData: {
         ipAddress: ip,

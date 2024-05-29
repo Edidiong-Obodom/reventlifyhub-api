@@ -36,7 +36,7 @@ export const nameAvailability = async (req: ExtendedRequest, res: Response) => {
       user: req.email,
       action: "Regime Name Availability",
       details: extraFields.message,
-      endPoint: "api/v1/user/regime/name/availability",
+      endPoint: "v1/user/regime/name/availability",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -75,7 +75,7 @@ export const nameAvailability = async (req: ExtendedRequest, res: Response) => {
           user: req.email,
           action: "Regime Name Availability",
           details: "Regime name already in use by another creator",
-          endPoint: "api/v1/user/regime/name/availability",
+          endPoint: "v1/user/regime/name/availability",
           date: currentDate,
           metaData: {
             ipAddress: ip,
@@ -90,7 +90,7 @@ export const nameAvailability = async (req: ExtendedRequest, res: Response) => {
           user: req.email,
           action: "Regime Name Availability",
           details: `Your regime ${nameCheck1.rows[0].name} is still ongoing, you can't create another with the same name until the current regime ends. `,
-          endPoint: "api/v1/user/regime/name/availability",
+          endPoint: "v1/user/regime/name/availability",
           date: currentDate,
           metaData: {
             ipAddress: ip,
@@ -105,7 +105,7 @@ export const nameAvailability = async (req: ExtendedRequest, res: Response) => {
           user: req.email,
           action: "Regime Name Availability",
           details: `success`,
-          endPoint: "api/v1/user/regime/name/availability",
+          endPoint: "v1/user/regime/name/availability",
           date: currentDate,
           metaData: {
             ipAddress: ip,
@@ -119,7 +119,7 @@ export const nameAvailability = async (req: ExtendedRequest, res: Response) => {
       user: req.email,
       action: "Regime Name Availability",
       details: "Regime name does not exist",
-      endPoint: "api/v1/user/regime/name/availability",
+      endPoint: "v1/user/regime/name/availability",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -132,7 +132,7 @@ export const nameAvailability = async (req: ExtendedRequest, res: Response) => {
       user: req.email,
       action: "Regime Name Availability",
       details: error.message,
-      endPoint: "api/v1/user/regime/name/availability",
+      endPoint: "v1/user/regime/name/availability",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -204,7 +204,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       user: req.email,
       action: "Regime Create",
       details: regimeTypeValid.message,
-      endPoint: "api/v1/user/regime/create",
+      endPoint: "v1/user/regime/create",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -226,7 +226,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       action: "Regime Create",
       details:
         "Your endDate or startDate must match the YYYY-MM-DD format i.e 2023-05-19",
-      endPoint: "api/v1/user/regime/create",
+      endPoint: "v1/user/regime/create",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -247,7 +247,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       action: "Regime Create",
       details:
         "Your event startDate or endDate must not be a day or more behind the current date",
-      endPoint: "api/v1/user/regime/create",
+      endPoint: "v1/user/regime/create",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -270,7 +270,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       action: "Regime Create",
       details:
         "Your endTime or startTime must match the HH:MM:SS 24hrs format i.e 23:04:00",
-      endPoint: "api/v1/user/regime/create",
+      endPoint: "v1/user/regime/create",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -302,7 +302,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       user: req.email,
       action: "Regime Create",
       details: extraFields.message,
-      endPoint: "api/v1/user/regime/create",
+      endPoint: "v1/user/regime/create",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -327,7 +327,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       user: req.email,
       action: "Regime Create",
       details: "You cannot have more than 10 pricings for one event.",
-      endPoint: "api/v1/user/regime/create",
+      endPoint: "v1/user/regime/create",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -346,7 +346,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       action: "Regime Create",
       details:
         "You cannot have 0 pricings for an event, even if it's a free event make one pricing and make the pricing amount 0.",
-      endPoint: "api/v1/user/regime/create",
+      endPoint: "v1/user/regime/create",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -396,7 +396,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       user: req.email,
       action: "Regime Create",
       details: pricingValidationResult[0],
-      endPoint: "api/v1/user/regime/create",
+      endPoint: "v1/user/regime/create",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -421,7 +421,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
         user: req.email,
         action: "Regime Create",
         details: "Regime name already in use.",
-        endPoint: "api/v1/user/regime/create",
+        endPoint: "v1/user/regime/create",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -437,7 +437,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
         user: req.email,
         action: "Regime Create",
         details: "Media larger than 10MB",
-        endPoint: "api/v1/user/regime/create",
+        endPoint: "v1/user/regime/create",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -535,7 +535,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       user: req.email,
       action: "Regime Create",
       details: "success",
-      endPoint: "api/v1/user/regime/create",
+      endPoint: "v1/user/regime/create",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -549,7 +549,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       user: req.email,
       action: "Regime Create",
       details: error.message,
-      endPoint: "api/v1/user/regime/create",
+      endPoint: "v1/user/regime/create",
       date: currentDate,
       metaData: {
         ipAddress: ip,

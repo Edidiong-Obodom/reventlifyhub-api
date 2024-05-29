@@ -74,7 +74,7 @@ export const paystackWebhook = async (req: Request, res: Response) => {
         action: "Ticket Purchase Paystack",
         details:
           "Get a life, stealing is not good. Go and learn a decent skill or trade or something... 😒👎",
-        endPoint: "api/v1/user/ticket/purchase/paystack-webhook",
+        endPoint: "v1/user/ticket/purchase/paystack-webhook",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -91,7 +91,7 @@ export const paystackWebhook = async (req: Request, res: Response) => {
       user: ip,
       action: "Ticket Purchase Paystack",
       details: error.message,
-      endPoint: "api/v1/user/ticket/purchase/paystack-webhook",
+      endPoint: "v1/user/ticket/purchase/paystack-webhook",
       date: currentDate,
       metaData: {
         ipAddress: ip,

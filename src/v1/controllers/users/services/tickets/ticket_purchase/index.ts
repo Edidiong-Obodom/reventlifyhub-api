@@ -32,7 +32,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
       user: email,
       action: "Ticket Purchase",
       details: extraFields.message,
-      endPoint: "api/v1/user/ticket/purchase",
+      endPoint: "v1/user/ticket/purchase",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -47,7 +47,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
       user: email,
       action: "Ticket Purchase",
       details: "You can not purchase more than 10 tickets at a time.",
-      endPoint: "api/v1/user/ticket/purchase",
+      endPoint: "v1/user/ticket/purchase",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -68,7 +68,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
         user: email,
         action: "Ticket Purchase",
         details: "Regime does not exist.",
-        endPoint: "api/v1/user/ticket/purchase",
+        endPoint: "v1/user/ticket/purchase",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -83,7 +83,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
         user: email,
         action: "Ticket Purchase",
         details: "Tickets are not being sold anymore.",
-        endPoint: "api/v1/user/ticket/purchase",
+        endPoint: "v1/user/ticket/purchase",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -103,7 +103,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
         user: email,
         action: "Ticket Purchase",
         details: "Pricing does not exist.",
-        endPoint: "api/v1/user/ticket/purchase",
+        endPoint: "v1/user/ticket/purchase",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -124,7 +124,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
         user: email,
         action: "Ticket Purchase",
         details: "Pricing amount does not match amount given.",
-        endPoint: "api/v1/user/ticket/purchase",
+        endPoint: "v1/user/ticket/purchase",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -148,7 +148,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
         user: email,
         action: "Ticket Purchase",
         details: "This pricing does not exist in the regime.",
-        endPoint: "api/v1/user/ticket/purchase",
+        endPoint: "v1/user/ticket/purchase",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -174,7 +174,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
         action: "Ticket Purchase",
         details:
           "The number of tickets you want to purchase is more than the number of available seats for this pricing",
-        endPoint: "api/v1/user/ticket/purchase",
+        endPoint: "v1/user/ticket/purchase",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -201,7 +201,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
           "You can't own more than 10 tickets for any event. You already own " +
           tickets +
           " ticket(s).",
-        endPoint: "api/v1/user/ticket/purchase",
+        endPoint: "v1/user/ticket/purchase",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -273,7 +273,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
         user: email,
         action: "Ticket Purchase",
         details: "success",
-        endPoint: "api/v1/user/ticket/purchase",
+        endPoint: "v1/user/ticket/purchase",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -353,7 +353,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
       user: email,
       action: "Ticket Purchase",
       details: "success",
-      endPoint: "api/v1/user/ticket/purchase",
+      endPoint: "v1/user/ticket/purchase",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -378,7 +378,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
       user: email,
       action: "Ticket Purchase",
       details: error.message,
-      endPoint: "api/v1/user/ticket/purchase",
+      endPoint: "v1/user/ticket/purchase",
       date: currentDate,
       metaData: {
         ipAddress: ip,

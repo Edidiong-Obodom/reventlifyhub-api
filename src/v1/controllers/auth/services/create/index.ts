@@ -41,7 +41,7 @@ const sendVerificationCode = async (req: Request, res: Response) => {
       user: email,
       action: "Signup Send Code",
       details: extraFields.message,
-      endPoint: "api/v1/auth/signup/send-code",
+      endPoint: "v1/auth/signup/send-code",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -56,7 +56,7 @@ const sendVerificationCode = async (req: Request, res: Response) => {
       user: email,
       action: "Signup Send Code",
       details: "Password must have a minimum of 8 characters.",
-      endPoint: "api/v1/auth/signup/send-code",
+      endPoint: "v1/auth/signup/send-code",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -86,7 +86,7 @@ const sendVerificationCode = async (req: Request, res: Response) => {
         user: email,
         action: "Signup Send Code",
         details: "User already exist!",
-        endPoint: "api/v1/auth/signup/send-code",
+        endPoint: "v1/auth/signup/send-code",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -112,7 +112,7 @@ const sendVerificationCode = async (req: Request, res: Response) => {
         user: email,
         action: "Signup Send Code",
         details: "User name already taken!",
-        endPoint: "api/v1/auth/signup/send-code",
+        endPoint: "v1/auth/signup/send-code",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -149,7 +149,7 @@ const sendVerificationCode = async (req: Request, res: Response) => {
       user: email,
       action: "Signup Send Code",
       details: "success",
-      endPoint: "api/v1/auth/signup/send-code",
+      endPoint: "v1/auth/signup/send-code",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -165,7 +165,7 @@ const sendVerificationCode = async (req: Request, res: Response) => {
       user: email,
       action: "Signup Send Code",
       details: error.message,
-      endPoint: "api/v1/auth/signup/send-code",
+      endPoint: "v1/auth/signup/send-code",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -201,7 +201,7 @@ const register = async (req: Request, res: Response) => {
       user: email,
       action: "Signup Register",
       details: "Invalid email format.",
-      endPoint: "api/v1/auth/signup/register",
+      endPoint: "v1/auth/signup/register",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -219,7 +219,7 @@ const register = async (req: Request, res: Response) => {
       user: email,
       action: "Signup Register",
       details: extraFields.message,
-      endPoint: "api/v1/auth/signup/register",
+      endPoint: "v1/auth/signup/register",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -240,7 +240,7 @@ const register = async (req: Request, res: Response) => {
         user: email,
         action: "Signup Register",
         details: "User already exists!",
-        endPoint: "api/v1/auth/signup/register",
+        endPoint: "v1/auth/signup/register",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -261,7 +261,7 @@ const register = async (req: Request, res: Response) => {
         user: email,
         action: "Signup Register",
         details: "No code was sent to this email.",
-        endPoint: "api/v1/auth/signup/register",
+        endPoint: "v1/auth/signup/register",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -279,7 +279,7 @@ const register = async (req: Request, res: Response) => {
         user: email,
         action: "Signup Register",
         details: "Incorrect Code.",
-        endPoint: "api/v1/auth/signup/register",
+        endPoint: "v1/auth/signup/register",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -319,7 +319,7 @@ const register = async (req: Request, res: Response) => {
       user: email,
       action: "Signup Register",
       details: "success",
-      endPoint: "api/v1/auth/signup/register",
+      endPoint: "v1/auth/signup/register",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -337,7 +337,7 @@ const register = async (req: Request, res: Response) => {
       user: email,
       action: "Signup Register",
       details: error.message,
-      endPoint: "api/v1/auth/signup/register",
+      endPoint: "v1/auth/signup/register",
       date: currentDate,
       metaData: {
         ipAddress: ip,

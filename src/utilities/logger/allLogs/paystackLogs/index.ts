@@ -52,7 +52,7 @@ export const paystackEditLogs = async (
       user: actor,
       action,
       details: message || status,
-      endPoint: "api/v1/user/ticket/purchase/paystack-webhook",
+      endPoint: "v1/user/ticket/purchase/paystack-webhook",
       date,
       metaData: {
         ipAddress: ip,

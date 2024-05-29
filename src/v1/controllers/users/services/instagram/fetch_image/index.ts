@@ -48,7 +48,7 @@ const fetchImage = async (req: ExtendedRequest, res: Response) => {
 
     const likes = await axios.get(
       //   `https://graph.instagram.com/17899303310671585/comments?fields=like_count&access_token=${instaAccessToken}`
-      `https://www.instagram.com/api/v1/media/17899303310671585/likers`
+      `https://www.instagram.com/v1/media/17899303310671585/likers`
     );
 
     console.log(likes.data);

@@ -30,7 +30,7 @@ const login = async (req: Request, res: Response) => {
       user: email,
       action: "Login",
       details: "Additional properties in the request body are not allowed.",
-      endPoint: "api/v1/auth/login",
+      endPoint: "v1/auth/login",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -48,7 +48,7 @@ const login = async (req: Request, res: Response) => {
       user: email,
       action: "Login",
       details: "Invalid email format.",
-      endPoint: "api/v1/auth/login",
+      endPoint: "v1/auth/login",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -69,7 +69,7 @@ const login = async (req: Request, res: Response) => {
         user: email,
         action: "Login",
         details: "User does not exist.",
-        endPoint: "api/v1/auth/login",
+        endPoint: "v1/auth/login",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -90,7 +90,7 @@ const login = async (req: Request, res: Response) => {
         user: email,
         action: "Login",
         details: "Invalid password.",
-        endPoint: "api/v1/auth/login",
+        endPoint: "v1/auth/login",
         date: currentDate,
         metaData: {
           ipAddress: ip,
@@ -121,7 +121,7 @@ const login = async (req: Request, res: Response) => {
       user: userData.email,
       action: "Login",
       details: "success",
-      endPoint: "api/v1/auth/login",
+      endPoint: "v1/auth/login",
       date: currentDate,
       metaData: {
         ipAddress: ip,
@@ -139,7 +139,7 @@ const login = async (req: Request, res: Response) => {
       user: email,
       action: "Login",
       details: error.message,
-      endPoint: "api/v1/auth/login",
+      endPoint: "v1/auth/login",
       date: currentDate,
       metaData: {
         ipAddress: ip,
