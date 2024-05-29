@@ -11,28 +11,27 @@ export const paystackWebhook = async (req: Request, res: Response) => {
   const hash = createHmac("sha512", secret)
     .update(JSON.stringify(req.body))
     .digest("hex");
+  // Retrieve the request's body
+  const event = req.body;
+
+  const { reference } = event.data;
+  const {
+    buyerId: userId,
+    regimeId,
+    pricingId,
+    affiliateId,
+    numberOfTickets,
+    transactionType,
+    transactionId,
+  } = event.data.metadata.data;
+
+  const paymentStatus = event.data.status;
+
+  // converts it to naira
+  const realAmount = Number(event.data.amount) / 100;
+  const amount = Number(event.data.amount) / 100 / Number(numberOfTickets);
   try {
     if (hash == req.headers["x-paystack-signature"]) {
-      // Retrieve the request's body
-      const event = req.body;
-
-      const { reference } = event.data;
-      const {
-        buyerId: userId,
-        regimeId,
-        pricingId,
-        affiliateId,
-        numberOfTickets,
-        transactionType,
-        transactionId,
-      } = event.data.metadata.data;
-
-      const paymentStatus = event.data.status;
-
-      // converts it to naira
-      const realAmount = Number(event.data.amount) / 100;
-      const amount = Number(event.data.amount) / 100 / Number(numberOfTickets);
-
       if (transactionType === "ticket-purchase") {
         const ticketPurchase = await tickets.ticket_purchase_paystackWebhook({
           paymentStatus,
@@ -65,6 +64,7 @@ export const paystackWebhook = async (req: Request, res: Response) => {
             status: ticketPurchase.status === 200 ? "success" : "failed",
             date: currentDate,
             action: "Ticket Purchase Paystack",
+            requestBody: event,
           }
         );
       }
@@ -87,17 +87,24 @@ export const paystackWebhook = async (req: Request, res: Response) => {
       });
     }
   } catch (error) {
-    await Log.auditLogs({
-      user: ip,
-      action: "Ticket Purchase Paystack",
-      details: error.message,
-      endPoint: "v1/user/ticket/purchase/paystack-webhook",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
+    return await Log.paystackEditLogs(
+      {
+        req,
+        res,
+        logResponse: error.message,
+        logStatusCode: 500,
       },
-    });
-    return res.status(500).json({ message: "Oops something went wrong..." });
+      {
+        actor: "api.paystack.co",
+        regimeId,
+        pricingId,
+        transactionId,
+        message: error.message,
+        status: "failed",
+        date: currentDate,
+        action: "Ticket Purchase Paystack",
+        requestBody: event,
+      }
+    );
   }
 };

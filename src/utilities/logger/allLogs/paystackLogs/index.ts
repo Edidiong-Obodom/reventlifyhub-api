@@ -16,6 +16,7 @@ export const paystackEditLogs = async (
     status,
     date,
     action,
+    requestBody,
   }: PaystackEditLogs
 ) => {
   const client = await clientPromise;
@@ -31,22 +32,12 @@ export const paystackEditLogs = async (
     status,
     date,
     action,
+    requestBody,
   });
 
   // Also respond and auto log if you want
   if (res) {
     const { ip, ipLookUp } = await getClientIp(req);
-    const {
-      city,
-      region,
-      country,
-      loc,
-      continent,
-      org,
-      timezone,
-      countryCode,
-      countryCurrency,
-    } = ipLookUp;
 
     await Log.auditLogs({
       user: actor,
@@ -56,17 +47,7 @@ export const paystackEditLogs = async (
       date,
       metaData: {
         ipAddress: ip,
-        location: {
-          city,
-          region,
-          country,
-          loc,
-          continent,
-          org,
-          timezone,
-          countryCode,
-          countryCurrency,
-        },
+        location: ipLookUp,
       },
     });
     res
