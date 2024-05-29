@@ -10,7 +10,7 @@ import usersRoute_v1 from "./v1/routes/user-routes";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
+// import rateLimit from "express-rate-limit";
 
 const port = process.env.PORT || 5000;
 const app = express();
@@ -33,14 +33,14 @@ const corsOptions = {
 };
 
 // Rate limiting to prevent brute-force attacks
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: "Too many requests from this IP, please try again later.",
-  keyGenerator: (req, res) => {
-    return req.ip;
-  },
-});
+// const limiter = rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   max: 1000, // limit each IP to 1000 requests per windowMs
+//   message: "Too many requests from this IP, please try again later.",
+//   keyGenerator: (req, res) => {
+//     return req.ip;
+//   },
+// });
 
 //middlewares// Conditional middleware for HSTS based on environment
 if (process.env.NODE_ENV === "production") {
@@ -66,7 +66,7 @@ app.use(
     xssFilter: true, // Add XSS protections
   })
 );
-app.use(limiter);
+// app.use(limiter);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.use(
