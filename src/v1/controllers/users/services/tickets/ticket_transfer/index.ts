@@ -7,7 +7,7 @@ import { capitalize } from "lodash";
 import Log from "../../../../../../utilities/logger";
 
 export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
-  const { user, userName } = req;
+  const { user, userName, email } = req;
   const fields = ["beneficiary", "ticket"];
   const currentDate = new Date();
 
@@ -33,7 +33,7 @@ export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
     return await Log.ticketEditLogs(
       { req, res },
       {
-        sender: user,
+        sender: email,
         beneficiary,
         ticket,
         status: "failed",
@@ -67,7 +67,7 @@ export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
       return await Log.ticketEditLogs(
         { req, res },
         {
-          sender: user,
+          sender: email,
           beneficiary,
           ticket,
           status: "failed",
@@ -83,7 +83,7 @@ export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
       return await Log.ticketEditLogs(
         { req, res },
         {
-          sender: user,
+          sender: email,
           beneficiary,
           ticket,
           status: "failed",
@@ -102,7 +102,7 @@ export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
       return await Log.ticketEditLogs(
         { req, res },
         {
-          sender: user,
+          sender: email,
           beneficiary,
           ticket,
           status: "failed",
@@ -159,7 +159,7 @@ export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
         },
       },
       {
-        sender: user,
+        sender: email,
         beneficiary,
         ticket,
         status: "success",
@@ -172,7 +172,7 @@ export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
     return await Log.ticketEditLogs(
       { req, res, logStatusCode: 500 },
       {
-        sender: user,
+        sender: email,
         beneficiary,
         ticket,
         status: "failed",
