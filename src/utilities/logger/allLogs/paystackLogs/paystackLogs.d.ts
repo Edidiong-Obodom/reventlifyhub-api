@@ -4,7 +4,7 @@ export interface PaystackEditLogs {
     pricingId: string;
     transactionId: string;
     status: string;
-    errorMessage?: string;
+    message?: string;
     date: Date;
     action: string;
   }

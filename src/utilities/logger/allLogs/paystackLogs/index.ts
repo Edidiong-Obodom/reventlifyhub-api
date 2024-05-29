@@ -12,7 +12,7 @@ export const paystackEditLogs = async (
     regimeId,
     pricingId,
     transactionId,
-    errorMessage,
+    message,
     status,
     date,
     action,
@@ -27,7 +27,7 @@ export const paystackEditLogs = async (
     regimeId,
     pricingId,
     transactionId,
-    errorMessage,
+    message,
     status,
     date,
     action,
@@ -51,7 +51,7 @@ export const paystackEditLogs = async (
     await Log.auditLogs({
       user: actor,
       action,
-      details: errorMessage || status,
+      details: message || status,
       endPoint: "api/v1/user/ticket/purchase/paystack-webhook",
       date,
       metaData: {
@@ -73,7 +73,7 @@ export const paystackEditLogs = async (
       .status(logStatusCode || status.toLowerCase() === "failed" ? 400 : 200)
       .json(
         logResponse || {
-          message: capitalize(errorMessage) || capitalize(status),
+          message: capitalize(message) || capitalize(status),
         }
       );
   }

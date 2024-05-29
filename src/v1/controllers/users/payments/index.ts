@@ -61,7 +61,7 @@ export const paystackWebhook = async (req: Request, res: Response) => {
             regimeId,
             pricingId,
             transactionId,
-            errorMessage: ticketPurchase.status === 200 ? "" : ticketPurchase.message,
+            message: ticketPurchase.message,
             status: ticketPurchase.status === 200 ? "success" : "failed",
             date: currentDate,
             action: "Ticket Purchase Paystack",
