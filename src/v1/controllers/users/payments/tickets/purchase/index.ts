@@ -61,7 +61,7 @@ export const ticket_purchase_paystackWebhook = async ({
       (transactionExistence.rows[0].status === "success" ||
         transactionExistence.rows[0].status === "failed")
     )
-      return { status: 200, message: `transaction has been fulfilled already` };
+      return { status: 200, message: `Transaction has been fulfilled already` };
 
     // Resppnse when payment transaction was not completed
     if (
