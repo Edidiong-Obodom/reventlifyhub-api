@@ -35,17 +35,6 @@ export const ticketEditLogs = async (
   if (res) {
     const actionSplit = action.split(" ");
     const { ip, ipLookUp } = await getClientIp(req);
-    const {
-      city,
-      region,
-      country,
-      loc,
-      continent,
-      org,
-      timezone,
-      countryCode,
-      countryCurrency,
-    } = ipLookUp;
 
     await Log.auditLogs({
       user: actor,
@@ -55,17 +44,7 @@ export const ticketEditLogs = async (
       date,
       metaData: {
         ipAddress: ip,
-        location: {
-          city,
-          region,
-          country,
-          loc,
-          continent,
-          org,
-          timezone,
-          countryCode,
-          countryCurrency,
-        },
+        location: ipLookUp,
       },
     });
     res
