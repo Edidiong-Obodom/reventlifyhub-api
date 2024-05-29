@@ -21,8 +21,8 @@ export const paystackEditLogs = async (
   const client = await clientPromise;
   const db = client.db(process.env.MONGODB_DB);
 
-  // insert ticket edit into logs
-  await db.collection("ticketEditLogs").insertOne({
+  // insert payment into logs
+  await db.collection("paystackLogs").insertOne({
     actor,
     regimeId,
     pricingId,
@@ -35,7 +35,6 @@ export const paystackEditLogs = async (
 
   // Also respond and auto log if you want
   if (res) {
-    const actionSplit = action.split(" ");
     const { ip, ipLookUp } = await getClientIp(req);
     const {
       city,
