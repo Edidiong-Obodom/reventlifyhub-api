@@ -1,4 +1,4 @@
-import { Request } from "express";
+import { Request, Response } from "express";
 import { ExtendedRequest } from "../../authenticateToken/authenticateToken.dto";
 import { IPinfo } from "node-ipinfo";
 
@@ -9,7 +9,7 @@ export interface MetaData {
 
 export interface ReturnResponse {
   req: Request | ExtendedRequest;
-  res?: any;
+  res?: Response;
   endPoint?: string;
   logResponse?: any;
   logStatusCode?: number;

@@ -50,12 +50,6 @@ export const paystackEditLogs = async (
         location: ipLookUp,
       },
     });
-    res
-      .status(logStatusCode || status.toLowerCase() === "failed" ? 400 : 200)
-      .json(
-        logResponse || {
-          message: capitalize(message) || capitalize(status),
-        }
-      );
+    res.send(logStatusCode);
   }
 };
