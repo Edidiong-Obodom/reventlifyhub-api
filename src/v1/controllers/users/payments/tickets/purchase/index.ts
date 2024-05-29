@@ -30,7 +30,7 @@ export const ticket_purchase_paystackWebhook = async ({
         Helpers.findUserById(userId),
         Helpers.getData("regimes", "id", regimeId),
         Helpers.getData("pricings", "id", pricingId),
-        Helpers.getData("transactions", "transaction_reference", reference),
+        Helpers.getData("transactions", "id", transactionId),
       ]);
 
     const { user_name, email } = clientDetails.rows[0];

@@ -342,11 +342,12 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
         "cache-control": "no-cache",
       },
     });
+
+    const reference = response.data.data.reference;
     const url = response.data.data.authorization_url;
-    const parts = url.split("/");
     await pool.query(
       `UPDATE transactions SET transaction_reference = $1, modified_at = CURRENT_TIMESTAMP WHERE id = $2`,
-      [parts[parts.length - 1], transactionId]
+      [reference, transactionId]
     );
 
     await Log.auditLogs({
