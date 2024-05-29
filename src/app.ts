@@ -15,7 +15,7 @@ import rateLimit from "express-rate-limit";
 const port = process.env.PORT || 5000;
 const app = express();
 // Set the trust proxy setting
-app.set("trust proxy", true);
+// app.set("trust proxy", true);
 const whitelist =
   process.env.NODE_ENV !== "production"
     ? "*"
