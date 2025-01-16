@@ -1,5 +1,6 @@
 export interface EventEditLogs {
     actor: string;
+    eventId: string;
     eventName: string;
     ticket: string;
     status: string;

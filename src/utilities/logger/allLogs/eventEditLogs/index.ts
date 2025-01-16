@@ -5,10 +5,11 @@ import { ReturnResponse } from "../allLogs";
 import { getClientIp } from "../auditLogs";
 import { EventEditLogs } from "./eventEditLogs";
 
-export const ticketEditLogs = async (
+export const eventEditLogs = async (
   { req, res, logResponse, logStatusCode, endPoint }: ReturnResponse,
   {
     actor,
+    eventId,
     eventName,
     status,
     ticket,
@@ -23,6 +24,7 @@ export const ticketEditLogs = async (
   // insert event edit into logs
   await db.collection("eventEditLogs").insertOne({
     actor,
+    eventId,
     eventName,
     ticket,
     status,
@@ -40,7 +42,7 @@ export const ticketEditLogs = async (
       user: actor,
       action,
       details: errorMessage || status,
-      endPoint: endPoint || `v1/user/ticket/${actionSplit[1]}`,
+      endPoint: endPoint || `v1/user/event/${actionSplit[1].toLowerCase()}`,
       date,
       metaData: {
         ipAddress: ip,

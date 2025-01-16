@@ -1,4 +1,4 @@
-import { RegimeType } from "../v1/controllers/users/services/events/create_events_types";
+import { RegimeType } from "../v1/controllers/users/services/events/create_events/create_events_types";
 
 /**
  * Checks whether the provided regime type is valid.

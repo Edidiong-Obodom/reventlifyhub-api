@@ -63,7 +63,7 @@ export const ticket_purchase_paystackWebhook = async ({
     )
       return { status: 200, message: `Transaction has been fulfilled already` };
 
-    // Resppnse when payment transaction was not completed
+    // Response when payment transaction was not completed
     if (
       paymentStatus.toLowerCase() !== "success" &&
       paymentStatus.toLowerCase() !== "failed" &&

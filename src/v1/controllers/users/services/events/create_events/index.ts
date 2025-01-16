@@ -1,14 +1,14 @@
 import { Response } from "express";
-import { pool } from "../../../../../db";
-import { ExtendedRequest } from "../../../../../utilities/authenticateToken/authenticateToken.dto";
-import * as Helpers from "../../../../../helpers";
+import { pool } from "../../../../../../db";
+import { ExtendedRequest } from "../../../../../../utilities/authenticateToken/authenticateToken.dto";
+import * as Helpers from "../../../../../../helpers";
 import * as nodemailer from "nodemailer";
 import * as bcrypt from "bcrypt";
-import cloudinary from "../../../../../utilities/cloudinary";
+import cloudinary from "../../../../../../utilities/cloudinary";
 import { CreateRegimeType } from "./create_events_types";
 import moment from "moment";
-import { getClientIp } from "../../../../../utilities/logger/allLogs";
-import Log from "../../../../../utilities/logger";
+import { getClientIp } from "../../../../../../utilities/logger/allLogs";
+import Log from "../../../../../../utilities/logger";
 
 // Check for regime name availability
 export const nameAvailability = async (req: ExtendedRequest, res: Response) => {

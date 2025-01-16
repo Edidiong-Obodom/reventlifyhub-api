@@ -1,4 +1,3 @@
-import { capitalize } from "lodash";
 import Log from "../..";
 import clientPromise from "../../../../mongoDB";
 import { ReturnResponse } from "../allLogs";
