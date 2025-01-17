@@ -40,7 +40,7 @@ export const ticket_purchase_paystackWebhook = async ({
     const transporter = nodemailer.createTransport(Helpers.mailCredentials);
 
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: "Reventlify <reventlifyhub@outlook.com>",
       to: email,
       subject: "Ticket Purchase Successful",
       text: `${capitalize(user_name)} you have successfully purchased ${Number(
@@ -158,11 +158,7 @@ export const ticket_purchase_paystackWebhook = async ({
     await pool.query("COMMIT");
 
     // send mail with defined transport object
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error(`Error sending email: ${error.message}`);
-      }
-    });
+    await transporter.sendMail(mailOptions);
 
     return {
       status: 200,
