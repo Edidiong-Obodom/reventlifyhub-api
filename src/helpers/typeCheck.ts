@@ -25,7 +25,7 @@ export const isValidRegimeType = (
   ];
 
   return {
-    status: validRegimeTypes.includes(regimeType.toLowerCase() as RegimeType),
+    status: validRegimeTypes.includes(regimeType?.toLowerCase() as RegimeType),
     message: `Invalid regime type, regimeType field should contain any of this values: ${allTypes}.`,
   };
 };

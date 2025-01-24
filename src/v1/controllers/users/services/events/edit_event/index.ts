@@ -10,7 +10,7 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
   const { user } = req;
   const currentDate = new Date();
 
-  const headers = ["regimeId"];
+  const headers = ["regime_id"];
 
   // check data for each field in the request query param and validate format
   const requiredHeaders = Helper.requiredFields(req.headers, headers, "Header");
@@ -18,12 +18,12 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
   if (!requiredHeaders.success) {
     return res.status(400).json({ message: requiredHeaders.message });
   }
-  const { regimeId } = req.headers; // Get regime ID from route parameter
+  const { regime_id } = req.headers; // Get regime ID from route parameter
 
-  if (typeof regimeId !== "string") {
+  if (typeof regime_id !== "string") {
     return res
       .status(400)
-      .json({ message: "regimeId header must be a string" });
+      .json({ message: "regime_id header must be a string" });
   }
 
   const {
@@ -40,7 +40,6 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
     regimeEndTime,
     ...rest
   } = req.body as Partial<CreateRegimeType>;
-  const regimeTypeValid = Helper.isValidRegimeType(regimeType);
 
   const data = JSON.stringify({
     regimeName,
@@ -56,24 +55,6 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
     regimeEndTime,
   });
 
-  // Check if regimeType is valid
-  if (!regimeTypeValid.status) {
-    return await Log.eventEditLogs(
-      { req, res, endPoint: "v1/user/regime/edit" },
-      {
-        actorId: user,
-        actor: req.email,
-        action: "Regime Edit",
-        eventId: regimeId,
-        eventName: regimeName,
-        data,
-        status: "Failed",
-        details: regimeTypeValid.message,
-        date: currentDate,
-      }
-    );
-  }
-
   // Check if there are any additional properties in the request body
   const extraFields = Helper.noExtraFields(rest);
   if (!extraFields.success) {
@@ -83,7 +64,7 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
         actorId: user,
         actor: req.email,
         action: "Regime Edit",
-        eventId: regimeId,
+        eventId: regime_id,
         eventName: regimeName,
         data,
         status: "Failed",
@@ -98,7 +79,7 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
     const regimeResult = await Helper.getData_CustomOperation(
       "regimes",
       ["id", "creator_id"],
-      [regimeId, user],
+      [regime_id, user],
       { ins: ["=", "="], between: ["AND"] }
     );
 
@@ -109,7 +90,7 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
           actorId: user,
           actor: req.email,
           action: "Regime Edit",
-          eventId: regimeId,
+          eventId: regime_id,
           eventName: regimeName,
           data,
           status: "Failed",
@@ -132,7 +113,7 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
           actorId: user,
           actor: req.email,
           action: "Regime Edit",
-          eventId: regimeId,
+          eventId: regime_id,
           eventName: regimeName,
           data,
           status: "Failed",
@@ -152,7 +133,7 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
           actorId: user,
           actor: req.email,
           action: "Regime Edit",
-          eventId: regimeId,
+          eventId: regime_id,
           eventName: regimeName,
           data,
           status: "Failed",
@@ -174,7 +155,7 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
           actorId: user,
           actor: req.email,
           action: "Regime Edit",
-          eventId: regimeId,
+          eventId: regime_id,
           eventName: regimeName,
           data,
           status: "Failed",
@@ -196,7 +177,7 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
           actorId: user,
           actor: req.email,
           action: "Regime Edit",
-          eventId: regimeId,
+          eventId: regime_id,
           eventName: regimeName,
           data,
           status: "Failed",
@@ -236,6 +217,26 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
       values.push(regimeDescription);
     }
     if (regimeType) {
+      const regimeTypeValid = Helper.isValidRegimeType(regimeType);
+
+      // Check if regimeType is valid
+      if (!regimeTypeValid.status) {
+        return await Log.eventEditLogs(
+          { req, res, endPoint: "v1/user/regime/edit" },
+          {
+            actorId: user,
+            actor: req.email,
+            action: "Regime Edit",
+            eventId: regime_id,
+            eventName: regimeName,
+            data,
+            status: "Failed",
+            details: regimeTypeValid.message,
+            date: currentDate,
+          }
+        );
+      }
+
       fieldsToUpdate.push("type = $" + (values.length + 1));
       values.push(regimeType);
     }
@@ -267,7 +268,7 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
       WHERE id = $${values.length + 1}
       RETURNING *;
     `;
-    values.push(regimeId);
+    values.push(regime_id);
 
     // Execute the update query
     const updateResult = await pool.query(updateQuery, values);
@@ -279,7 +280,7 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
           actorId: user,
           actor: req.email,
           action: "Regime Edit",
-          eventId: regimeId,
+          eventId: regime_id,
           eventName: regimeName,
           data,
           status: "Failed",
@@ -303,7 +304,7 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
         actorId: user,
         actor: req.email,
         action: "Regime Edit",
-        eventId: regimeId,
+        eventId: regime_id,
         eventName: regimeName,
         data,
         status: "Success",
@@ -319,7 +320,7 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
         actorId: user,
         actor: req.email,
         action: "Regime Edit",
-        eventId: regimeId,
+        eventId: regime_id,
         eventName: regimeName,
         data,
         status: "Failed",
