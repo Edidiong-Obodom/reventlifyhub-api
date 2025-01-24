@@ -2,6 +2,7 @@ import { Router } from "express";
 import authenticateToken from "../../utilities/authenticateToken/authenticateToken";
 import {
   createRegime,
+  editRegime,
   fetchImage,
   instagramBasicDisplayInit,
   nameAvailability,
@@ -13,20 +14,27 @@ import { allRateLimiter } from "../../utilities/rate-limit/all-rate-limit";
 
 const router = Router();
 
-// ========== Services ========== 
+// ========== Services ==========
 // Check regime name availability
-router.get("/regime/name/availability", authenticateToken, allRateLimiter, nameAvailability);
+router.get(
+  "/regime/name/availability",
+  authenticateToken,
+  allRateLimiter,
+  nameAvailability
+);
 
 // Create new regime
 router.post("/regime/create", authenticateToken, allRateLimiter, createRegime);
+
+// Edit regime details
+router.patch("/regime/edit", authenticateToken, allRateLimiter, editRegime);
 
 // Ticket purchase
 router.post("/ticket/purchase", authenticateToken, ticketPurchase);
 
 // Ticket transfer
 router.post("/ticket/transfer", authenticateToken, ticketTransfer);
-// ========== Services ========== 
-
+// ========== Services ==========
 
 // ========== Payments ==========
 router.post("/ticket/purchase/paystack-webhook", paystackWebhook);

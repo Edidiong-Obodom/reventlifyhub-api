@@ -1,11 +1,12 @@
 export interface EventEditLogs {
-    actor: string;
-    eventId: string;
-    eventName: string;
-    ticket: string;
-    status: string;
-    errorMessage?: string;
-    date: Date;
-    action: string;
-  }
-  
+  actor: string;
+  actorId: string;
+  eventId: string;
+  eventName: string;
+  status: string;
+  details: string;
+  data: string;
+  date: Date;
+  action: string;
+  error?: string;
+}

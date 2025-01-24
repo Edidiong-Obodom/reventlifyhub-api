@@ -9,13 +9,15 @@ export const eventEditLogs = async (
   { req, res, logResponse, logStatusCode, endPoint }: ReturnResponse,
   {
     actor,
+    actorId,
     eventId,
     eventName,
     status,
-    ticket,
-    errorMessage,
+    details,
     date,
+    data,
     action,
+    error,
   }: EventEditLogs
 ) => {
   const client = await clientPromise;
@@ -23,14 +25,16 @@ export const eventEditLogs = async (
 
   // insert event edit into logs
   await db.collection("eventEditLogs").insertOne({
+    actorId,
     actor,
     eventId,
     eventName,
-    ticket,
-    status,
-    errorMessage,
-    date,
     action,
+    status,
+    details,
+    date,
+    data,
+    error,
   });
 
   // Also respond and auto log if you want
@@ -41,8 +45,8 @@ export const eventEditLogs = async (
     await Log.auditLogs({
       user: actor,
       action,
-      details: errorMessage || status,
-      endPoint: endPoint || `v1/user/event/${actionSplit[1].toLowerCase()}`,
+      details: details ?? status,
+      endPoint: endPoint ?? `v1/user/event/${actionSplit[1].toLowerCase()}`,
       date,
       metaData: {
         ipAddress: ip,
@@ -50,10 +54,10 @@ export const eventEditLogs = async (
       },
     });
     res
-      .status(logStatusCode || status.toLowerCase() === "failed" ? 400 : 200)
+      .status(logStatusCode ?? status.toLowerCase() === "failed" ? 400 : 200)
       .json(
-        logResponse || {
-          message: capitalize(errorMessage) || capitalize(status),
+        logResponse ?? {
+          message: capitalize(details) ?? capitalize(status),
         }
       );
   }
