@@ -10,15 +10,21 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
   const { user } = req;
   const currentDate = new Date();
 
-  const params = ["regimeId"];
+  const headers = ["regimeId"];
 
   // check data for each field in the request query param and validate format
-  const requiredParams = Helper.requiredFields(req.params, params, "Param");
+  const requiredHeaders = Helper.requiredFields(req.headers, headers, "Header");
 
-  if (!requiredParams.success) {
-    return res.status(400).json({ message: requiredParams.message });
+  if (!requiredHeaders.success) {
+    return res.status(400).json({ message: requiredHeaders.message });
   }
-  const { regimeId } = req.params; // Get regime ID from route parameter
+  const { regimeId } = req.headers; // Get regime ID from route parameter
+
+  if (typeof regimeId !== "string") {
+    return res
+      .status(400)
+      .json({ message: "regimeId header must be a string" });
+  }
 
   const {
     regimeName,
