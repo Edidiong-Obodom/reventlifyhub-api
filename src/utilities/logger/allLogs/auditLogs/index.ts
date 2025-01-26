@@ -39,6 +39,16 @@ export const auditLogs = async ({
 }: AuditLogs) => {
   const client = await clientPromise;
   const db = client.db(process.env.MONGODB_DB);
+  const currentDate = new Date();
+  const timestamp = Math.floor(currentDate.getTime() / 1000);
+  const indexes = await db.collection("auditLogs").listIndexes().toArray();
+
+  const findIndex = (fieldToIndex: string) =>
+    indexes.find((index: any) => index?.key?.[fieldToIndex] > 0);
+
+  if (!findIndex("timestamp")?.name) {
+    await db.collection("auditLogs").createIndex({ timestamp: 1 });
+  }
 
   // insert audit log
   await db.collection("auditLogs").insertOne({
@@ -46,7 +56,8 @@ export const auditLogs = async ({
     action,
     details,
     endPoint,
-    date,
+    date: date ?? currentDate,
+    timestamp,
     metaData,
   });
 };

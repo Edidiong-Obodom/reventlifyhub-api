@@ -11,8 +11,8 @@ export const nameRegex = /^[A-Za-z\-']+$/;
 /**
  * characters not allowed for regime naming
  */
-export const characters_not_allowed_for_regime_naming =
-  '`_- ,:;/.{}[]()<>|?"*^%#@!~+&%';
+export const characters_not_allowed_for_regime_naming = /[{}<>]/;
+// export const characters_not_allowed_for_regime_naming = /[{}<>?*%!~+]/;
 
 /**
  * Date Format Regular Expression Description:

@@ -5,7 +5,7 @@ export interface PaystackEditLogs {
   transactionId: string;
   status: string;
   message?: string;
-  date: Date;
+  date?: Date;
   action: string;
   requestBody: any;
 }

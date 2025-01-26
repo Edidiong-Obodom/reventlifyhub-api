@@ -4,6 +4,6 @@ export interface TicketEditLogs {
   ticket: string;
   status: string;
   errorMessage?: string;
-  date: Date;
+  date?: Date;
   name: string;
 }

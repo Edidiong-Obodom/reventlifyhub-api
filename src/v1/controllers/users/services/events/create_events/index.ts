@@ -52,6 +52,13 @@ export const nameAvailability = async (req: ExtendedRequest, res: Response) => {
     if (regimeName.length === 0)
       res.status(400).json({ message: "Regime name can not be empty." });
 
+    if (Helpers.characters_not_allowed_for_regime_naming.test(regimeName)) {
+      return res.status(400).json({
+        message:
+          "Regime name with any of these special characters are not allowed: {}<>",
+      });
+    }
+
     const nameCheck = await pool.query(
       "SELECT * FROM regimes WHERE name ILIKE $1",
       [regimeName.trim()]

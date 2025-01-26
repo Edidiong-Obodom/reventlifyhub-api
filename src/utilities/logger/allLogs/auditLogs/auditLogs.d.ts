@@ -5,6 +5,6 @@ export interface AuditLogs {
   action: string;
   details?: string;
   endPoint: string;
-  date: Date;
-  metaData?: MetaData;
+  date?: Date;
+  metaData: MetaData;
 }

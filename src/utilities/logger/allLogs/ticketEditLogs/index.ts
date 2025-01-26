@@ -19,6 +19,17 @@ export const ticketEditLogs = async (
 ) => {
   const client = await clientPromise;
   const db = client.db(process.env.MONGODB_DB);
+  const currentDate = new Date();
+  const timestamp = Math.floor(currentDate.getTime() / 1000);
+
+  const indexes = await db.collection("ticketEditLogs").listIndexes().toArray();
+
+  const findIndex = (fieldToIndex: string) =>
+    indexes.find((index: any) => index?.key?.[fieldToIndex] > 0);
+
+  if (!findIndex("timestamp")?.name) {
+    await db.collection("ticketEditLogs").createIndex({ timestamp: 1 });
+  }
 
   // insert ticket edit into logs
   await db.collection("ticketEditLogs").insertOne({
@@ -27,7 +38,8 @@ export const ticketEditLogs = async (
     ticket,
     status,
     errorMessage,
-    date,
+    date: date ?? currentDate,
+    timestamp,
     name,
   });
 

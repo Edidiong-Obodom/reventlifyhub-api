@@ -6,7 +6,7 @@ export interface EventEditLogs {
   status: string;
   details: string;
   data: string;
-  date: Date;
+  date?: Date;
   action: string;
   error?: string;
 }

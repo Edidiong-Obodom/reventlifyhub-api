@@ -20,6 +20,16 @@ export const paystackEditLogs = async (
 ) => {
   const client = await clientPromise;
   const db = client.db(process.env.MONGODB_DB);
+  const currentDate = new Date();
+  const timestamp = Math.floor(currentDate.getTime() / 1000);
+  const indexes = await db.collection("paystackLogs").listIndexes().toArray();
+
+  const findIndex = (fieldToIndex: string) =>
+    indexes.find((index: any) => index?.key?.[fieldToIndex] > 0);
+
+  if (!findIndex("timestamp")?.name) {
+    await db.collection("paystackLogs").createIndex({ timestamp: 1 });
+  }
 
   // insert payment into logs
   await db.collection("paystackLogs").insertOne({
@@ -29,7 +39,8 @@ export const paystackEditLogs = async (
     transactionId,
     message,
     status,
-    date,
+    date: date ?? currentDate,
+    timestamp,
     action,
     requestBody,
   });
