@@ -247,16 +247,15 @@ BEGIN
 END $$;
 
 
--- Create function to update balances and create corresponding credit transaction
 CREATE OR REPLACE FUNCTION update_balance_and_create_credit()
 RETURNS TRIGGER AS $$
 BEGIN
     -- Declare local variables to hold updated balances
     DECLARE
-        debited_balance NUMERIC(17, 2);
-        credited_balance NUMERIC(17, 2);
-        company_balance NUMERIC(17, 2);
-        affiliate_balance NUMERIC(17, 2);
+        debited_balance NUMERIC(17, 2) := 0.0;
+        credited_balance NUMERIC(17, 2) := 0.0;
+        company_balance NUMERIC(17, 2) := 0.0;
+        affiliate_balance NUMERIC(17, 2) := 0.0;
     BEGIN
     IF NEW.treated IS NOT TRUE AND NEW.status = 'success' THEN
         -- Only process debit transactions

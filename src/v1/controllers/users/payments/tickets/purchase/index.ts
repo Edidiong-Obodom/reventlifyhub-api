@@ -92,6 +92,12 @@ export const ticket_purchase_paystackWebhook = async ({
       };
     }
 
+    // Update transactions
+    await pool.query(
+      `UPDATE transactions SET status = $1, modified_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
+      ["success", transactionId]
+    );
+
     // Create tickets
     for (let i = 0; i < Number(numberOfTickets); i++) {
       await pool.query(
@@ -105,17 +111,11 @@ export const ticket_purchase_paystackWebhook = async ({
           : [pricingId, transactionId, userId, userId, "active"]
       );
     }
-
+    
     // Update available seats
     await pool.query(
       `UPDATE pricings SET available_seats = available_seats - $1 WHERE id = $2`,
       [Number(numberOfTickets), pricingId]
-    );
-
-    // Update transactions
-    await pool.query(
-      `UPDATE transactions SET status = $1, modified_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
-      ["success", transactionId]
     );
     await pool.query("COMMIT");
 
