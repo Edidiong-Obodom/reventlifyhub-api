@@ -311,8 +311,10 @@ BEGIN
                 );
 
                 -- Set the balance after transaction for the debit transaction
-                NEW.treated = TRUE;
-                NEW.balance_after_transaction := debited_balance;
+                -- Explicitly update the treated column in the transactions table
+                UPDATE transactions
+                SET treated = TRUE, balance_after_transaction = debited_balance
+                WHERE id = NEW.id;
             END IF;
 
             -- Regime debit
@@ -365,8 +367,10 @@ BEGIN
                     );
 
                 -- Set the balance after transaction for the debit transaction
-                NEW.treated = TRUE;
-                NEW.balance_after_transaction := debited_balance;
+                -- Explicitly update the treated column in the transactions table
+                UPDATE transactions
+                SET treated = TRUE, balance_after_transaction = debited_balance
+                WHERE id = NEW.id;
             END IF;
 
                 -- Regime debit
@@ -419,8 +423,10 @@ BEGIN
                 );
 
                 -- Set the balance after transaction for the debit transaction
-                NEW.treated = TRUE;
-                NEW.balance_after_transaction := debited_balance;
+                -- Explicitly update the treated column in the transactions table
+                UPDATE transactions
+                SET treated = TRUE, balance_after_transaction = debited_balance
+                WHERE id = NEW.id;
             END IF;
         END IF;
 
@@ -443,8 +449,10 @@ BEGIN
                 WHERE id = NEW.client_id
                 RETURNING balance INTO debited_balance;
 
-                NEW.treated = TRUE;
-                NEW.balance_after_transaction := debited_balance;
+                -- Explicitly update the treated column in the transactions table
+                UPDATE transactions
+                SET treated = TRUE, balance_after_transaction = debited_balance
+                WHERE id = NEW.id;
             END IF;
 
             -- Handles ticket purchase for external payment gateways
@@ -552,8 +560,10 @@ BEGIN
                     );
                 END IF;
 
-                NEW.treated = TRUE;
-                NEW.balance_after_transaction := debited_balance;
+                -- Explicitly update the treated column in the transactions table
+                UPDATE transactions
+                SET treated = TRUE, balance_after_transaction = debited_balance
+                WHERE id = NEW.id;
             END IF;
         END IF;
 
@@ -565,9 +575,11 @@ BEGIN
             WHERE id = NEW.beneficiary
             RETURNING balance INTO credited_balance;
 
-            NEW.treated = TRUE;
-            NEW.balance_after_transaction := credited_balance;
-        END IF;
+            -- Explicitly update the treated column in the transactions table
+            UPDATE transactions
+            SET treated = TRUE, balance_after_transaction = credited_balance
+            WHERE id = NEW.id;
+            END IF;
 
         -- Return the updated transaction record
         RETURN NEW;
