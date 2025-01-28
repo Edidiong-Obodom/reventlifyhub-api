@@ -342,7 +342,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
         regimeId,
         affiliateId,
         "ticket-purchase",
-        "debit",
+        "inter-debit",
         Number(amount * counter),
         charge,
         paystackCharge,
