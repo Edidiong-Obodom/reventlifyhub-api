@@ -8,7 +8,8 @@ CREATE TABLE
         company_name TEXT NOT NULL,
         available_balance NUMERIC(17, 2) NOT NULL DEFAULT 0.00,
         currency VARCHAR(3) NOT NULL DEFAULT 'ngn',
-        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
 CREATE TABLE
@@ -93,22 +94,34 @@ CREATE TABLE
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
-CREATE TABLE
-    transactions (
-        id TEXT PRIMARY KEY DEFAULT uuid_generate_v4 (),
-        client_id TEXT REFERENCES clients (id),
-        regime_id TEXT REFERENCES regimes (id),
-        transaction_type TEXT NOT NULL DEFAULT 'inter-credit',
-        amount NUMERIC(17, 2) NOT NULL DEFAULT 0.00,
-        currency VARCHAR(3) NOT NULL DEFAULT 'ngn',
-        transaction_reference TEXT,
-        transaction_action TEXT DEFAULT 'ticket-purchase',
-        description TEXT,
-        status TEXT DEFAULT 'pending',
-        payment_gateway TEXT NOT NULL DEFAULT 'RIP-Gateway',
-        modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
+CREATE TABLE transactions (
+    id TEXT PRIMARY KEY DEFAULT uuid_generate_v4(),
+    client_id TEXT REFERENCES clients(id),
+    beneficiary TEXT REFERENCES clients(id), 
+    regime_id TEXT REFERENCES regimes(id),
+    affiliate_id TEXT REFERENCES clients(id),
+    transaction_type TEXT NOT NULL DEFAULT 'intra-debit',
+    CHECK (transaction_type IN ('inter-credit', 'inter-debit', 'intra-credit', 'intra-debit', 'free')),  -- Restricting values
+    actual_amount NUMERIC(17, 2) NOT NULL DEFAULT 0.00,
+    balance_after_transaction NUMERIC(17, 2) NOT NULL DEFAULT 0.00,
+    company_charge NUMERIC(17, 2) NOT NULL DEFAULT 0.00,
+    payment_gateway_charge NUMERIC(17, 2) NOT NULL DEFAULT 0.00,
+    affiliate_amount NUMERIC(17, 2) DEFAULT 0.00,
+    amount NUMERIC(17, 2) NOT NULL DEFAULT 0.00,
+    currency VARCHAR(3) NOT NULL DEFAULT 'ngn',
+    transaction_reference TEXT,
+    local_bank TEXT,
+    local_account_no TEXT,
+    local_account_name TEXT,
+    is_recursion BOOLEAN NOT NULL DEFAULT FALSE,
+    transaction_action TEXT DEFAULT 'ticket-purchase',
+    description TEXT,
+    status TEXT DEFAULT 'pending',
+    payment_gateway TEXT NOT NULL DEFAULT 'internal',
+    modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 
 CREATE TABLE
     regime_participant (
@@ -203,3 +216,283 @@ UPDATE company_funds SET available_balance = 0 WHERE available_balance > 0;
 UPDATE clients SET balance = 0 WHERE balance > 0;
 UPDATE regimes SET balance = 0 WHERE balance > 0;
 UPDATE pricings SET available_seats = total_seats WHERE available_seats > 0;
+
+-- Drop Only Tables (Without Dropping the Schema)
+DO $$ 
+BEGIN
+   EXECUTE (
+      SELECT string_agg('DROP TABLE IF EXISTS "' || tablename || '" CASCADE;', ' ')
+      FROM pg_tables
+      WHERE schemaname = 'public'
+   );
+END $$;
+
+-- Drop the Entire Schema and Recreate It
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
+GRANT ALL ON SCHEMA public TO postgres;
+GRANT ALL ON SCHEMA public TO public;
+
+-- Best Option for Clearing Data Without Dropping Tables
+DO $$ 
+BEGIN
+   EXECUTE (
+      SELECT string_agg('TRUNCATE TABLE "' || tablename || '" RESTART IDENTITY CASCADE;', ' ')
+      FROM pg_tables
+      WHERE schemaname = 'public'
+   );
+END $$;
+
+
+-- Create function to update balances and create corresponding credit transaction
+CREATE OR REPLACE FUNCTION update_balance_and_create_credit()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Declare local variables to hold updated balances
+    DECLARE
+        debited_balance NUMERIC(17, 2);
+        credited_balance NUMERIC(17, 2);
+    BEGIN
+        -- Only process debit transactions
+        IF NEW.transaction_type IN ('intra-debit') AND NEW.status = 'success' THEN
+
+            IF NEW.client_id IS NOT NULL AND NEW.regime_id IS NOT NULL THEN
+                -- Check if the client has enough balance before updating
+                SELECT balance INTO debited_balance
+                FROM clients
+                WHERE id = NEW.client_id;
+
+                IF debited_balance < NEW.amount THEN
+                    RAISE EXCEPTION 'Insufficient balance for transaction. Client ID: %, Balance: %, Required: %',
+                        NEW.client_id, debited_balance, NEW.amount;
+                END IF;
+                -- Update the balance of the client being debited and store the new balance
+                UPDATE clients
+                SET balance = balance - NEW.amount
+                WHERE id = NEW.client_id
+                RETURNING balance INTO debited_balance;
+
+                -- Update the balance of the client being credited and store the new balance
+                UPDATE regimes
+                SET balance = balance + NEW.amount
+                WHERE id = NEW.regime_id
+                RETURNING balance INTO credited_balance;
+
+                -- Create corresponding credit transaction for the beneficiary
+                INSERT INTO transactions (
+                    regime_id, client_id, transaction_type, amount, currency, transaction_reference,
+                    balance_after_transaction, is_recursion, transaction_action, description, local_bank,
+                    local_account_no, local_account_name, payment_gateway, status
+                )
+                VALUES (
+                    NEW.regime_id,               -- client_id for credit (beneficiary)
+                    NEW.client_id,                 -- beneficiary for credit (debited client)
+                    'intra-credit',                      -- intra-credit transaction type
+                    NEW.amount,                    -- amount being credited
+                    NEW.currency,                  -- currency
+                    NEW.transaction_reference,     -- reference for the transaction
+                    credited_balance,              -- Get the updated balance for the beneficiary
+                    TRUE,                           -- Mark it as recursion to avoid it being processed again
+                    NEW.transaction_action,
+                    NEW.description,
+                    NEW.local_bank,
+                    NEW.local_account_no,
+                    NEW.local_account_name,
+                    NEW.payment_gateway,
+                    NEW.status
+                );
+
+                -- Set the balance after transaction for the debit transaction
+                NEW.balance_after_transaction := debited_balance;
+            END IF;
+
+            -- Regime debit
+            IF NEW.client_id IS NOT NULL AND NEW.beneficiary IS NOT NULL THEN
+                -- Check if the client has enough balance before updating
+                SELECT balance INTO debited_balance
+                FROM clients
+                WHERE id = NEW.client_id;
+
+                IF debited_balance < NEW.amount THEN
+                    RAISE EXCEPTION 'Insufficient balance for transaction. Client ID: %, Balance: %, Required: %',
+                        NEW.client_id, debited_balance, NEW.amount;
+                END IF;
+                -- Update the balance of the client being debited and store the new balance
+                UPDATE clients
+                SET balance = balance - NEW.amount
+                WHERE id = NEW.client_id
+                RETURNING balance INTO debited_balance;
+
+                -- Update the balance of the client being credited and store the new balance
+                UPDATE clients
+                SET balance = balance + NEW.amount
+                WHERE id = NEW.beneficiary
+                RETURNING balance INTO credited_balance;
+
+                -- Create corresponding credit transaction for the beneficiary
+                    INSERT INTO transactions (
+                        client_id, beneficiary, transaction_type, amount, currency, transaction_reference,
+                        balance_after_transaction, is_recursion, transaction_action, description, local_bank,
+                        local_account_no, local_account_name, payment_gateway, status
+                    )
+                    VALUES (
+                        NEW.beneficiary,               -- client_id for credit (beneficiary)
+                        NEW.client_id,                 -- beneficiary for credit (debited client)
+                        'intra-credit',                      -- intra-credit transaction type
+                        NEW.amount,                    -- amount being credited
+                        NEW.currency,                  -- currency
+                        NEW.transaction_reference,     -- reference for the transaction
+                        credited_balance,              -- Get the updated balance for the beneficiary
+                        TRUE,                           -- Mark it as recursion to avoid it being processed again
+                        NEW.transaction_action,
+                        NEW.description,
+                        NEW.local_bank,
+                        NEW.local_account_no,
+                        NEW.local_account_name,
+                        NEW.payment_gateway,
+                        NEW.status
+                    );
+
+                -- Set the balance after transaction for the debit transaction
+                NEW.balance_after_transaction := debited_balance;
+            END IF;
+
+                -- Regime debit
+            IF NEW.regime_id IS NOT NULL AND NEW.beneficiary IS NOT NULL THEN
+                -- Check if the client has enough balance before updating
+                SELECT balance INTO debited_balance
+                FROM regimes
+                WHERE id = NEW.regime_id;
+
+                IF debited_balance < NEW.amount THEN
+                    RAISE EXCEPTION 'Insufficient balance for transaction. Regime ID: %, Balance: %, Required: %',
+                        NEW.regime_id, debited_balance, NEW.amount;
+                END IF;
+                -- Update the balance of the client being debited and store the new balance
+                UPDATE regimes
+                SET balance = balance - NEW.amount
+                WHERE id = NEW.regime_id
+                RETURNING balance INTO debited_balance;
+
+                -- Update the balance of the client being credited and store the new balance
+                UPDATE clients
+                SET balance = balance + NEW.amount
+                WHERE id = NEW.beneficiary
+                RETURNING balance INTO credited_balance;
+
+                -- Create corresponding credit transaction for the beneficiary
+                INSERT INTO transactions (
+                    beneficiary, regime_id, transaction_type, amount, currency, transaction_reference,
+                    balance_after_transaction, is_recursion, transaction_action, description, local_bank,
+                    local_account_no, local_account_name, payment_gateway, status
+                )
+                VALUES (
+                    NEW.beneficiary,               -- client_id for credit (beneficiary)
+                    NEW.regime_id,                 -- beneficiary for credit (debited client)
+                    'intra-credit',                      -- intra-credit transaction type
+                    NEW.amount,                    -- amount being credited
+                    NEW.currency,                  -- currency
+                    NEW.transaction_reference,     -- reference for the transaction
+                    credited_balance,              -- Get the updated balance for the beneficiary
+                    TRUE,                           -- Mark it as recursion to avoid it being processed again
+                    NEW.transaction_action,
+                    NEW.description,
+                    NEW.local_bank,
+                    NEW.local_account_no,
+                    NEW.local_account_name,
+                    NEW.payment_gateway,
+                    NEW.status
+                );
+
+                -- Set the balance after transaction for the debit transaction
+                NEW.balance_after_transaction := debited_balance;
+            END IF;
+        END IF;
+
+        -- Inter Debit
+        IF NEW.transaction_type IN ('inter-debit') AND NEW.status = 'success' THEN
+            -- Set balance after transaction for the client withdrawals to their local bank account
+            IF NEW.client_id IS NOT NULL AND NEW.beneficiary IS NOT NULL AND NEW.client_id = NEW.beneficiary THEN
+                -- Check if the client has enough balance before updating
+                SELECT balance INTO debited_balance
+                FROM clients
+                WHERE id = NEW.client_id;
+
+                IF debited_balance < NEW.amount THEN
+                    RAISE EXCEPTION 'Insufficient balance for transaction. Client ID: %, Balance: %, Required: %',
+                        NEW.client_id, debited_balance, NEW.amount;
+                END IF;
+                -- Update the balance of the client making the withdrawal and store the new balance
+                UPDATE clients
+                SET balance = balance - NEW.amount
+                WHERE id = NEW.client_id
+                RETURNING balance INTO debited_balance;
+
+                NEW.balance_after_transaction := debited_balance;
+            END IF;
+
+            -- Handles ticket purchase for external payment gateways
+            IF NEW.client_id IS NOT NULL AND NEW.regime_id IS NOT NULL THEN
+
+                -- Update the balance of the client being credited and store the new balance
+                UPDATE regimes
+                SET balance = balance + NEW.amount
+                WHERE id = NEW.regime_id
+                RETURNING balance INTO credited_balance;
+
+                -- Create corresponding credit transaction for the beneficiary
+                INSERT INTO transactions (
+                    regime_id, client_id, transaction_type, amount, currency, transaction_reference,
+                    balance_after_transaction, is_recursion, transaction_action, description, local_bank,
+                    local_account_no, local_account_name, payment_gateway, status
+                )
+                VALUES (
+                    NEW.regime_id,               -- client_id for credit (beneficiary)
+                    NEW.client_id,                 -- beneficiary for credit (debited client)
+                    'inter-credit',                      -- inter-credit transaction type
+                    NEW.amount,                    -- amount being credited
+                    NEW.currency,                  -- currency
+                    NEW.transaction_reference,     -- reference for the transaction
+                    credited_balance,              -- Get the updated balance for the beneficiary
+                    TRUE,                           -- Mark it as recursion to avoid it being processed again
+                    NEW.transaction_action,
+                    NEW.description,
+                    NEW.local_bank,
+                    NEW.local_account_no,
+                    NEW.local_account_name,
+                    NEW.payment_gateway,
+                    NEW.status
+                );
+
+                NEW.balance_after_transaction := debited_balance;
+            END IF;
+        END IF;
+
+        -- Set balance after transaction for the credited client
+        IF NEW.transaction_type IN ('inter-credit') AND NEW.status = 'success' AND NEW.is_recursion IS NOT TRUE THEN
+            -- Update balance for credited client (if the transaction is a credit)
+            UPDATE clients
+            SET balance = balance + NEW.amount
+            WHERE id = NEW.beneficiary
+            RETURNING balance INTO credited_balance;
+
+            NEW.balance_after_transaction := credited_balance;
+        END IF;
+
+        -- Return the updated transaction record
+        RETURN NEW;
+    END;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger to call the function after inserting a new transaction
+CREATE TRIGGER after_transaction_insert
+AFTER INSERT ON transactions
+FOR EACH ROW
+EXECUTE FUNCTION update_balance_and_create_credit();
+
+-- Create trigger to call the function after updating a transaction
+CREATE TRIGGER after_transaction_update
+AFTER UPDATE ON transactions
+FOR EACH ROW
+EXECUTE FUNCTION update_balance_and_create_credit();

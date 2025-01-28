@@ -98,20 +98,9 @@ export const ticket_purchase_paystackWebhook = async ({
       amount
     );
 
-    const regimeMoney = affiliateId
-      ? realAmount - (charge + affiliate_amount * Number(numberOfTickets))
-      : realAmount - charge;
-
-    const companyMoney = charge - (paystackCharge + 2.5);
+    const companyMoney = charge - paystackCharge;
     // Use Promise.all for Concurrent Operations
     await Promise.all([
-      // credits regime
-      pool.query(
-        `UPDATE regimes
-        SET balance = balance + $1
-        WHERE id = $2 RETURNING *`,
-        [regimeMoney, regimeId]
-      ),
       // credits company
       pool.query(
         `UPDATE company_funds

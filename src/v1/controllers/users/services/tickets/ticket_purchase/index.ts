@@ -95,6 +95,23 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
         .json({ message: "Tickets are not being sold anymore." });
     }
 
+    // Check if affiliate is a known user
+    const affiliateDetails = await Helpers.getData("clients", "id", affiliate);
+    if (affiliate && affiliateDetails.rowCount === 0) {
+      await Log.auditLogs({
+        user: email,
+        action: "Ticket Purchase",
+        details: "Affiliate does not exist.",
+        endPoint: "v1/user/ticket/purchase",
+        date: currentDate,
+        metaData: {
+          ipAddress: ip,
+          location: ipLookUp,
+        },
+      });
+      return res.status(400).json({ message: "Affiliate does not exist." });
+    }
+
     // Check if pricing exists
     const pricing = await Helpers.getData("pricings", "id", pricingId);
 
@@ -294,16 +311,43 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
       });
     }
 
+    const realAmount = Number(amount * counter);
+
+    const affiliateId =
+      affiliate && regime.rows[0].affiliate && affiliate !== user
+        ? affiliate
+        : "";
+
+    const { charge, paystackCharge } = Helpers.chargeHandler(
+      realAmount,
+      Number(counter),
+      amount
+    );
+
+    const affiliate_amount =
+      isSeatAvailable.rows[0].affiliate_amount > 0
+        ? Number(isSeatAvailable.rows[0].affiliate_amount) * counter
+        : 0.0;
+
+    const regimeMoney = affiliateId
+      ? realAmount - (charge + affiliate_amount)
+      : realAmount - charge;
+
     const transaction = await pool.query(
       `INSERT INTO transactions 
-      (client_id, regime_id, transaction_action, transaction_type, amount, currency, status, payment_gateway) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+      (client_id, regime_id, affiliate_id, transaction_action, transaction_type, actual_amount, company_charge, payment_gateway_charge, affiliate_amount, amount, currency, status, payment_gateway) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
       [
         user,
         regimeId,
+        affiliateId,
         "ticket-purchase",
         "debit",
         Number(amount * counter),
+        charge,
+        paystackCharge,
+        affiliate_amount,
+        regimeMoney,
         "ngn",
         "pending",
         "Paystack",
@@ -320,10 +364,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
         data: {
           regimeId: regimeId,
           pricingId: pricingId,
-          affiliateId:
-            affiliate && regime.rows[0].affiliate && affiliate !== user
-              ? affiliate
-              : "",
+          affiliateId,
           transactionId,
           buyerId: user,
           numberOfTickets: Number(counter),
