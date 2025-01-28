@@ -53,7 +53,7 @@ export const paystackStatusHandler = (theEvent: string, theStatus: string) => {
  *
  * The custom charge is determined based on the price of a single ticket:
  * - If the ticket price is 1000 Naira or less, the charge is 100 Naira per ticket.
- * - If the ticket price is between 1001 and 4999 Naira, the charge is 200 Naira per ticket.
+ * - If the ticket price is between 1001 and 5999 Naira, the charge is 300 Naira per ticket.
  * - If the ticket price is 5000 Naira or more, the charge is 5% of the ticket price per ticket.
  *
  * @example
@@ -88,10 +88,10 @@ export const chargeHandler = (
       paystackCharge,
       charge: 100 * amountOfTickets,
     };
-  } else if (ticketPrice > 1000 && ticketPrice <= 4999) {
+  } else if (ticketPrice > 1000 && ticketPrice <= 5999) {
     return {
       paystackCharge,
-      charge: 200 * amountOfTickets,
+      charge: 300 * amountOfTickets,
     };
   } else {
     return {

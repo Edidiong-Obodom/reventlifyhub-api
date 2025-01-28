@@ -321,12 +321,12 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
     const { charge, paystackCharge } = Helpers.chargeHandler(
       realAmount,
       Number(counter),
-      amount
+      Number(amount)
     );
 
     const affiliate_amount =
       isSeatAvailable.rows[0].affiliate_amount > 0
-        ? Number(isSeatAvailable.rows[0].affiliate_amount) * counter
+        ? Number(isSeatAvailable.rows[0].affiliate_amount) * Number(counter)
         : 0.0;
 
     const regimeMoney = affiliateId
@@ -344,7 +344,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
         "ticket-purchase",
         "inter-debit",
         Number(amount * counter),
-        charge,
+        Number(charge - paystackCharge),
         paystackCharge,
         affiliate_amount,
         regimeMoney,

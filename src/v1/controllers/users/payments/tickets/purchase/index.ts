@@ -35,7 +35,7 @@ export const ticket_purchase_paystackWebhook = async ({
 
     const { user_name, email } = clientDetails.rows[0];
 
-    const { name, affiliate_amount } = pricingDetails.rows[0];
+    const { name } = pricingDetails.rows[0];
     // Send email notification
     const transporter = nodemailer.createTransport(Helpers.mailCredentials);
 
@@ -91,33 +91,6 @@ export const ticket_purchase_paystackWebhook = async ({
         message: "Transaction failed",
       };
     }
-
-    const { charge, paystackCharge } = Helpers.chargeHandler(
-      realAmount,
-      Number(numberOfTickets),
-      amount
-    );
-
-    const companyMoney = charge - paystackCharge;
-    // Use Promise.all for Concurrent Operations
-    await Promise.all([
-      // credits company
-      pool.query(
-        `UPDATE company_funds
-      SET available_balance = available_balance + $1
-      WHERE currency = $2 RETURNING *`,
-        [companyMoney, "ngn"]
-      ),
-      // credits affiliate
-      affiliateId
-        ? pool.query(
-            `UPDATE clients
-      SET balance = balance + $1
-      WHERE id = $2 RETURNING *`,
-            [Number(affiliate_amount * numberOfTickets), affiliateId]
-          )
-        : "",
-    ]);
 
     // Create tickets
     for (let i = 0; i < Number(numberOfTickets); i++) {

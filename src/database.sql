@@ -116,6 +116,7 @@ CREATE TABLE transactions (
     local_account_no TEXT,
     local_account_name TEXT,
     is_recursion BOOLEAN NOT NULL DEFAULT FALSE,
+    treated BOOLEAN NOT NULL DEFAULT FALSE,
     transaction_action TEXT DEFAULT 'ticket-purchase',
     description TEXT,
     status TEXT DEFAULT 'pending',
@@ -257,8 +258,9 @@ BEGIN
         company_balance NUMERIC(17, 2);
         affiliate_balance NUMERIC(17, 2);
     BEGIN
+    IF NEW.treated IS NOT TRUE AND NEW.status = 'success' THEN
         -- Only process debit transactions
-        IF NEW.transaction_type IN ('intra-debit') AND NEW.status = 'success' THEN
+        IF NEW.transaction_type IN ('intra-debit') THEN
 
             IF NEW.client_id IS NOT NULL AND NEW.regime_id IS NOT NULL THEN
                 -- Check if the client has enough balance before updating
@@ -284,7 +286,7 @@ BEGIN
 
                 -- Create corresponding credit transaction for the beneficiary
                 INSERT INTO transactions (
-                    regime_id, client_id, transaction_type, actual_amount, currency, transaction_reference,
+                    regime_id, client_id, transaction_type, actual_amount, currency, treated, transaction_reference,
                     balance_after_transaction, is_recursion, transaction_action, description, local_bank,
                     local_account_no, local_account_name, payment_gateway, status, parent
                 )
@@ -294,6 +296,7 @@ BEGIN
                     'intra-credit',                      -- intra-credit transaction type
                     NEW.amount,                    -- amount being credited
                     NEW.currency,                  -- currency
+                    TRUE,
                     NEW.transaction_reference,     -- reference for the transaction
                     credited_balance,              -- Get the updated balance for the beneficiary
                     TRUE,                           -- Mark it as recursion to avoid it being processed again
@@ -308,6 +311,7 @@ BEGIN
                 );
 
                 -- Set the balance after transaction for the debit transaction
+                NEW.treated = TRUE;
                 NEW.balance_after_transaction := debited_balance;
             END IF;
 
@@ -336,7 +340,7 @@ BEGIN
 
                 -- Create corresponding credit transaction for the beneficiary
                     INSERT INTO transactions (
-                        client_id, beneficiary, transaction_type, actual_amount, currency, transaction_reference,
+                        client_id, beneficiary, transaction_type, actual_amount, currency, treated, transaction_reference,
                         balance_after_transaction, is_recursion, transaction_action, description, local_bank,
                         local_account_no, local_account_name, payment_gateway, status, parent
                     )
@@ -346,6 +350,7 @@ BEGIN
                         'intra-credit',                      -- intra-credit transaction type
                         NEW.amount,                    -- amount being credited
                         NEW.currency,                  -- currency
+                        TRUE,
                         NEW.transaction_reference,     -- reference for the transaction
                         credited_balance,              -- Get the updated balance for the beneficiary
                         TRUE,                           -- Mark it as recursion to avoid it being processed again
@@ -360,6 +365,7 @@ BEGIN
                     );
 
                 -- Set the balance after transaction for the debit transaction
+                NEW.treated = TRUE;
                 NEW.balance_after_transaction := debited_balance;
             END IF;
 
@@ -388,7 +394,7 @@ BEGIN
 
                 -- Create corresponding credit transaction for the beneficiary
                 INSERT INTO transactions (
-                    beneficiary, regime_id, transaction_type, actual_amount, currency, transaction_reference,
+                    beneficiary, regime_id, transaction_type, actual_amount, currency, treated, transaction_reference,
                     balance_after_transaction, is_recursion, transaction_action, description, local_bank,
                     local_account_no, local_account_name, payment_gateway, status, parent
                 )
@@ -398,6 +404,7 @@ BEGIN
                     'intra-credit',                      -- intra-credit transaction type
                     NEW.amount,                    -- amount being credited
                     NEW.currency,                  -- currency
+                    TRUE,
                     NEW.transaction_reference,     -- reference for the transaction
                     credited_balance,              -- Get the updated balance for the beneficiary
                     TRUE,                           -- Mark it as recursion to avoid it being processed again
@@ -412,12 +419,13 @@ BEGIN
                 );
 
                 -- Set the balance after transaction for the debit transaction
+                NEW.treated = TRUE;
                 NEW.balance_after_transaction := debited_balance;
             END IF;
         END IF;
 
         -- Inter Debit
-        IF NEW.transaction_type IN ('inter-debit') AND NEW.status = 'success' THEN
+        IF NEW.transaction_type IN ('inter-debit') THEN
             -- Set balance after transaction for the client withdrawals to their local bank account
             IF NEW.client_id IS NOT NULL AND NEW.beneficiary IS NOT NULL AND NEW.client_id = NEW.beneficiary THEN
                 -- Check if the client has enough balance before updating
@@ -435,6 +443,7 @@ BEGIN
                 WHERE id = NEW.client_id
                 RETURNING balance INTO debited_balance;
 
+                NEW.treated = TRUE;
                 NEW.balance_after_transaction := debited_balance;
             END IF;
 
@@ -449,7 +458,7 @@ BEGIN
 
                 -- Create corresponding credit transaction for the beneficiary
                 INSERT INTO transactions (
-                    regime_id, client_id, transaction_type, actual_amount, currency, transaction_reference,
+                    regime_id, client_id, transaction_type, actual_amount, currency, treated, transaction_reference,
                     balance_after_transaction, is_recursion, transaction_action, description, local_bank,
                     local_account_no, local_account_name, payment_gateway, status, parent
                 )
@@ -459,6 +468,7 @@ BEGIN
                     'inter-credit',                      -- inter-credit transaction type
                     NEW.amount,                    -- amount being credited
                     NEW.currency,                  -- currency
+                    TRUE,
                     NEW.transaction_reference,     -- reference for the transaction
                     credited_balance,              -- Get the updated balance for the beneficiary
                     TRUE,                           -- Mark it as recursion to avoid it being processed again
@@ -481,7 +491,7 @@ BEGIN
                     RETURNING balance INTO affiliate_balance;
                     -- Create corresponding credit transaction for the beneficiary
                     INSERT INTO transactions (
-                        regime_id, client_id, beneficiary, transaction_type, actual_amount, currency, transaction_reference,
+                        regime_id, client_id, beneficiary, transaction_type, actual_amount, currency, treated, transaction_reference,
                         balance_after_transaction, is_recursion, transaction_action, description, local_bank,
                         local_account_no, local_account_name, payment_gateway, status, parent
                     )
@@ -492,6 +502,7 @@ BEGIN
                         'inter-credit',                      -- inter-credit transaction type
                         NEW.affiliate_amount,                    -- amount being credited
                         NEW.currency,                  -- currency
+                        TRUE,
                         NEW.transaction_reference,     -- reference for the transaction
                         affiliate_balance,              -- Get the updated balance for the beneficiary
                         TRUE,                           -- Mark it as recursion to avoid it being processed again
@@ -515,7 +526,7 @@ BEGIN
                     RETURNING available_balance INTO company_balance;
                     -- Create corresponding credit transaction for the beneficiary
                     INSERT INTO transactions (
-                        regime_id, client_id, company, transaction_type, actual_amount, currency, transaction_reference,
+                        regime_id, client_id, company, transaction_type, actual_amount, currency, treated, transaction_reference,
                         balance_after_transaction, is_recursion, transaction_action, description, local_bank,
                         local_account_no, local_account_name, payment_gateway, status, parent
                     )
@@ -526,6 +537,7 @@ BEGIN
                         'inter-credit',                      -- inter-credit transaction type
                         NEW.company_charge,                    -- amount being credited
                         NEW.currency,                  -- currency
+                        TRUE,
                         NEW.transaction_reference,     -- reference for the transaction
                         company_balance,              -- Get the updated balance for the beneficiary
                         TRUE,                           -- Mark it as recursion to avoid it being processed again
@@ -540,23 +552,28 @@ BEGIN
                     );
                 END IF;
 
+                NEW.treated = TRUE;
                 NEW.balance_after_transaction := debited_balance;
             END IF;
         END IF;
 
         -- Set balance after transaction for the credited client
-        IF NEW.transaction_type IN ('inter-credit') AND NEW.status = 'success' AND NEW.is_recursion IS NOT TRUE THEN
+        IF NEW.transaction_type IN ('inter-credit') AND NEW.is_recursion IS NOT TRUE THEN
             -- Update balance for credited client (if the transaction is a credit)
             UPDATE clients
             SET balance = balance + NEW.amount
             WHERE id = NEW.beneficiary
             RETURNING balance INTO credited_balance;
 
+            NEW.treated = TRUE;
             NEW.balance_after_transaction := credited_balance;
         END IF;
 
         -- Return the updated transaction record
         RETURN NEW;
+    END IF;
+    -- Return the transaction record
+    RETURN NEW;
     END;
 END;
 $$ LANGUAGE plpgsql;
@@ -572,3 +589,6 @@ CREATE TRIGGER after_transaction_update
 AFTER UPDATE ON transactions
 FOR EACH ROW
 EXECUTE FUNCTION update_balance_and_create_credit();
+
+-- delete trigger
+DROP TRIGGER IF EXISTS after_transaction_update ON table_name;
