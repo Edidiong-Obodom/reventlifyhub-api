@@ -333,6 +333,25 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
       ? realAmount - (charge + affiliate_amount)
       : realAmount - charge;
 
+    const data = [
+      user,
+      regimeId,
+      "ticket-purchase",
+      "inter-debit",
+      Number(amount * counter),
+      Number(charge - paystackCharge),
+      paystackCharge,
+      affiliate_amount,
+      regimeMoney,
+      "ngn",
+      "pending",
+      "Paystack",
+    ];
+
+    if (affiliateId) {
+      data.push(affiliateId);
+    }
+
     const transaction = await pool.query(
       `INSERT INTO transactions 
       (client_id, regime_id, transaction_action, transaction_type, actual_amount, company_charge, payment_gateway_charge, affiliate_amount, amount, currency, status, payment_gateway${
@@ -341,21 +360,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12${
         affiliateId ? ", $13" : ""
       }) RETURNING id`,
-      [
-        user,
-        regimeId,
-        "ticket-purchase",
-        "inter-debit",
-        Number(amount * counter),
-        Number(charge - paystackCharge),
-        paystackCharge,
-        affiliate_amount,
-        regimeMoney,
-        "ngn",
-        "pending",
-        "Paystack",
-        affiliateId,
-      ]
+      data
     );
 
     const transactionId = transaction.rows[0].id;
