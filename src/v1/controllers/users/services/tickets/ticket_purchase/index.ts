@@ -335,12 +335,15 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
 
     const transaction = await pool.query(
       `INSERT INTO transactions 
-      (client_id, regime_id, affiliate_id, transaction_action, transaction_type, actual_amount, company_charge, payment_gateway_charge, affiliate_amount, amount, currency, status, payment_gateway) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
+      (client_id, regime_id, transaction_action, transaction_type, actual_amount, company_charge, payment_gateway_charge, affiliate_amount, amount, currency, status, payment_gateway${
+        affiliateId ? ", affiliate_id" : ""
+      }) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12${
+        affiliateId ? ", $13" : ""
+      }) RETURNING id`,
       [
         user,
         regimeId,
-        affiliateId,
         "ticket-purchase",
         "inter-debit",
         Number(amount * counter),
@@ -351,6 +354,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
         "ngn",
         "pending",
         "Paystack",
+        affiliateId,
       ]
     );
 

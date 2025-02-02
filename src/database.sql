@@ -431,6 +431,10 @@ BEGIN
 
         -- Inter Debit
         IF NEW.transaction_type IN ('inter-debit') THEN
+            -- Check if the client has enough balance before updating
+            SELECT balance INTO debited_balance
+            FROM clients
+            WHERE id = NEW.client_id;
             -- Set balance after transaction for the client withdrawals to their local bank account
             IF NEW.client_id IS NOT NULL AND NEW.beneficiary IS NOT NULL AND NEW.client_id = NEW.beneficiary THEN
                 -- Check if the client has enough balance before updating
