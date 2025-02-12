@@ -67,7 +67,12 @@ export const chargeHandler = (
   moneyTotal: number,
   amountOfTickets: number,
   ticketPrice: number
-): { paystackCharge: number; charge: number } => {
+): {
+  paystackCharge: number;
+  charge: number;
+  companyCharge: number;
+  affiliateCharge: number;
+} => {
   let paystackCharge;
   //   Actual charge paystack takes per transaction
   const actualCharge = () => {
@@ -81,22 +86,44 @@ export const chargeHandler = (
   };
 
   actualCharge();
+  let charge = 0;
+  let profit = 0;
+  let affiliateCharge = 0;
+  let companyCharge = 0;
 
   //   return actual charge and our own charge
   if (ticketPrice <= 1000) {
+    charge = 100 * amountOfTickets;
+    profit = charge - paystackCharge;
+    affiliateCharge = profit / 2;
+    companyCharge = profit / 2;
     return {
       paystackCharge,
-      charge: 100 * amountOfTickets,
+      charge,
+      affiliateCharge,
+      companyCharge,
     };
   } else if (ticketPrice > 1000 && ticketPrice <= 5999) {
+    charge = 300 * amountOfTickets;
+    profit = charge - paystackCharge;
+    affiliateCharge = profit / 2;
+    companyCharge = profit / 2;
     return {
       paystackCharge,
-      charge: 300 * amountOfTickets,
+      charge,
+      affiliateCharge,
+      companyCharge,
     };
   } else {
+    charge = ((ticketPrice * 5) / 100) * amountOfTickets;
+    profit = charge - paystackCharge;
+    affiliateCharge = profit / 2;
+    companyCharge = profit / 2;
     return {
       paystackCharge,
-      charge: ((ticketPrice * 5) / 100) * amountOfTickets,
+      charge,
+      affiliateCharge,
+      companyCharge,
     };
   }
 };

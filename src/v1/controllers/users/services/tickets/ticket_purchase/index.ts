@@ -318,20 +318,10 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
         ? affiliate
         : "";
 
-    const { charge, paystackCharge } = Helpers.chargeHandler(
-      realAmount,
-      Number(counter),
-      Number(amount)
-    );
+    const { charge, paystackCharge, companyCharge, affiliateCharge } =
+      Helpers.chargeHandler(realAmount, Number(counter), Number(amount));
 
-    const affiliate_amount =
-      isSeatAvailable.rows[0].affiliate_amount > 0
-        ? Number(isSeatAvailable.rows[0].affiliate_amount) * Number(counter)
-        : 0.0;
-
-    const regimeMoney = affiliateId
-      ? realAmount - (charge + affiliate_amount)
-      : realAmount - charge;
+    const regimeMoney = realAmount - charge;
 
     const data = [
       user,
@@ -341,7 +331,6 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
       Number(amount * counter),
       Number(charge - paystackCharge),
       paystackCharge,
-      affiliate_amount,
       regimeMoney,
       "ngn",
       "pending",
@@ -349,16 +338,17 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
     ];
 
     if (affiliateId) {
-      data.push(affiliateId);
+      data.push(affiliateId, affiliateCharge);
+      data[5] = companyCharge;
     }
 
     const transaction = await pool.query(
       `INSERT INTO transactions 
-      (client_id, regime_id, transaction_action, transaction_type, actual_amount, company_charge, payment_gateway_charge, affiliate_amount, amount, currency, status, payment_gateway${
-        affiliateId ? ", affiliate_id" : ""
+      (client_id, regime_id, transaction_action, transaction_type, actual_amount, company_charge, payment_gateway_charge, amount, currency, status, payment_gateway${
+        affiliateId ? ", affiliate_id, affiliate_amount" : ""
       }) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12${
-        affiliateId ? ", $13" : ""
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11${
+        affiliateId ? ", $12, $13" : ""
       }) RETURNING id`,
       data
     );

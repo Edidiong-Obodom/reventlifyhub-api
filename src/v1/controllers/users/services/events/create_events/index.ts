@@ -366,7 +366,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
     });
   }
 
-  regimePricing.map(async (price, i) => {
+  regimePricing.forEach(async (price, i) => {
     const pricingFieldCheck = Helpers.requiredFields(
       price,
       pricingFields,
@@ -380,20 +380,11 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
 
     if (
       regimeAffiliate &&
-      (!price.pricingAmount ||
-        !price.pricingAffiliateAmount ||
-        price.pricingAmount < 1000 ||
-        price.pricingAffiliateAmount < 100)
+      (!price?.pricingAmount || price?.pricingAmount < 1000)
     ) {
       pricingValidationResult.push(
-        "Pricing amount cannot be lesser than 1000, and affiliate amount cannot be lesser than 100 when affiliate is true. Check pricing number " +
+        "Pricing amount cannot be lesser than 1000. Check pricing number " +
           Number(i + 1)
-      );
-    }
-
-    if (!regimeAffiliate && price.pricingAffiliateAmount) {
-      pricingValidationResult.push(
-        "Pricing can't have pricingAffiliateAmount when regimeAffiliate is false"
       );
     }
   });
@@ -493,15 +484,14 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
     // creates all the regime's pricing
     for (const price of regimePricing) {
       await pool.query(
-        `INSERT INTO pricings(regime_id, name, total_seats, available_seats, amount, affiliate_amount) 
-        VALUES($1, $2, $3, $4, $5, $6) RETURNING *`,
+        `INSERT INTO pricings(regime_id, name, total_seats, available_seats, amount) 
+        VALUES($1, $2, $3, $4, $5) RETURNING *`,
         [
           newRegime.rows[0].id,
           price.pricingName,
           price.pricingTotalSeats,
           price.pricingTotalSeats,
           price.pricingAmount,
-          price.pricingAffiliateAmount,
         ]
       );
     }
