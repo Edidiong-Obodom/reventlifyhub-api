@@ -256,6 +256,7 @@ BEGIN
         credited_balance NUMERIC(17, 2) := 0.0;
         company_balance NUMERIC(17, 2) := 0.0;
         affiliate_balance NUMERIC(17, 2) := 0.0;
+        company_id TEXT;
     BEGIN
     IF NEW.treated IS NOT TRUE AND NEW.status = 'success' THEN
         -- Only process debit transactions
@@ -535,6 +536,8 @@ BEGIN
                     SET available_balance = available_balance + NEW.company_charge
                     WHERE currency ILIKE NEW.currency
                     RETURNING available_balance INTO company_balance;
+
+                    SELECT id FROM company_funds WHERE currency ILIKE NEW.currency INTO company_id;
                     -- Create corresponding credit transaction for the beneficiary
                     INSERT INTO transactions (
                         regime_id, client_id, company, transaction_type, actual_amount, currency, treated, transaction_reference,
@@ -544,7 +547,7 @@ BEGIN
                     VALUES (
                         NEW.regime_id,               -- regime
                         NEW.client_id,                 -- (debited client)
-                        NEW.company,                 -- beneficiary for credit (credited client)
+                        company_id,                 -- beneficiary for credit (credited client)
                         'inter-credit',                      -- inter-credit transaction type
                         NEW.company_charge,                    -- amount being credited
                         NEW.currency,                  -- currency

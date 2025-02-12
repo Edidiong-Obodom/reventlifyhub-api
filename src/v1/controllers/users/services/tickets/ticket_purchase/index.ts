@@ -314,7 +314,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
     const realAmount = Number(amount * counter);
 
     const affiliateId =
-      affiliate && regime.rows[0].affiliate && affiliate !== user
+      affiliate && affiliate !== user
         ? affiliate
         : "";
 
