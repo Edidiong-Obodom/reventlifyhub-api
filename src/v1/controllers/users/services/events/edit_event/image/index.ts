@@ -49,7 +49,7 @@ export const regimeImageEdit = async (req: ExtendedRequest, res: Response) => {
       );
     }
 
-    if (regimeDetails[0].creator_id !== user) {
+    if (regimeDetails.rows[0].creator_id !== user) {
       return await Log.eventEditLogs(
         { req, res, endPoint: "v1/user/regime/edit/image", logStatusCode: 403 },
         {
@@ -57,7 +57,7 @@ export const regimeImageEdit = async (req: ExtendedRequest, res: Response) => {
           actor: req.email,
           action: "Regime Edit: Image",
           eventId: regimeId,
-          eventName: regimeDetails[0].name,
+          eventName: regimeDetails.rows[0].name,
           data,
           status: "Failed",
           details: "You are not authorized to edit this regime",
@@ -74,7 +74,7 @@ export const regimeImageEdit = async (req: ExtendedRequest, res: Response) => {
           actor: req.email,
           action: "Regime Edit: Image",
           eventId: regimeId,
-          eventName: regimeDetails[0].name,
+          eventName: regimeDetails.rows[0].name,
           data,
           status: "Failed",
           details: "Media larger than 10MB",
@@ -100,7 +100,7 @@ export const regimeImageEdit = async (req: ExtendedRequest, res: Response) => {
           actor: req.email,
           action: "Regime Edit: Image",
           eventId: regimeId,
-          eventName: regimeDetails[0].name,
+          eventName: regimeDetails.rows[0].name,
           data,
           status: "Success",
           details: "1 record updated successfully",

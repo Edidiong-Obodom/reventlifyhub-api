@@ -32,15 +32,15 @@ export const byPopularity = async (req: ExtendedRequest, res: Response) => {
     let conditions = [];
 
     if (country) {
-      conditions.push(`r.country = $${values.length + 1}`);
+      conditions.push(`r.country ILIKE $${values.length + 1}`);
       values.push(country);
     }
     if (state) {
-      conditions.push(`r.state = $${values.length + 1}`);
+      conditions.push(`r.state ILIKE $${values.length + 1}`);
       values.push(state);
     }
     if (address) {
-      conditions.push(`r.address = $${values.length + 1}`);
+      conditions.push(`r.address ILIKE $${values.length + 1}`);
       values.push(address);
     }
 
