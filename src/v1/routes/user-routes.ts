@@ -1,11 +1,13 @@
 import { Router } from "express";
 import authenticateToken from "../../utilities/authenticateToken/authenticateToken";
 import {
+  byPopularity,
   createRegime,
   editRegime,
   fetchImage,
   instagramBasicDisplayInit,
   nameAvailability,
+  regimeImageEdit,
   ticketPurchase,
   ticketTransfer,
 } from "../controllers/users/usersController";
@@ -26,8 +28,24 @@ router.get(
 // Create new regime
 router.post("/regime/create", authenticateToken, allRateLimiter, createRegime);
 
-// Edit regime details
+// ========== Edit regime details ==========
 router.patch("/regime/edit", authenticateToken, allRateLimiter, editRegime);
+router.patch(
+  "/regime/edit/image",
+  authenticateToken,
+  allRateLimiter,
+  regimeImageEdit
+);
+// ========== Edit regime details ==========
+
+// ========== View regimes ==========
+router.get(
+  "/regime/view/popular",
+  authenticateToken,
+  allRateLimiter,
+  byPopularity
+);
+// ========== View regimes ==========
 
 // Ticket purchase
 router.post("/ticket/purchase", authenticateToken, ticketPurchase);

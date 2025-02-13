@@ -5,6 +5,9 @@ import * as Helpers from "../../../../../../helpers/index";
 import { CreateRegimeType } from "../create_events/create_events_types";
 import Log from "../../../../../../utilities/logger";
 
+// edit regime image
+export * from "./image";
+
 // Edit Regime
 export const editRegime = async (req: ExtendedRequest, res: Response) => {
   const { user } = req;
