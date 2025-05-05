@@ -4,6 +4,7 @@ export interface CreateRegimeType {
   regimeDescription: string;
   regimeAddress: string;
   regimePricing: any[];
+  regimeVenue: string;
   regimeCity: string;
   regimeState: string;
   regimeCountry: string;

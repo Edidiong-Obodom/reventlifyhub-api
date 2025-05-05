@@ -44,6 +44,32 @@ CREATE TABLE
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
+CREATE TABLE 
+    followers (
+        id TEXT PRIMARY KEY DEFAULT uuid_generate_v4 (),
+        influencer TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE ON UPDATE CASCADE,
+        follower TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE ON UPDATE CASCADE
+    );
+
+CREATE TABLE 
+    conversations (
+        id TEXT NOT NULL UNIQUE,
+        client1_id TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE ON UPDATE CASCADE,
+        client2_id TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE ON UPDATE CASCADE
+    );
+CREATE TABLE 
+    messages (
+        id TEXT NOT NULL UNIQUE,
+        conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE ON UPDATE CASCADE,
+        sender_id TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE ON UPDATE CASCADE,
+        message_text TEXT,
+        message_media TEXT,
+        message_media_id TEXT,
+        delete_message BOOLEAN NOT NULL DEFAULT false,
+        seen BOOLEAN NOT NULL DEFAULT false,
+        sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
 CREATE TABLE
     password_reset (
         id TEXT PRIMARY KEY DEFAULT uuid_generate_v4 (),
@@ -59,6 +85,7 @@ CREATE TABLE
         id TEXT PRIMARY KEY DEFAULT uuid_generate_v4 (),
         creator_id TEXT NOT NULL REFERENCES clients (id),
         name VARCHAR(255) NOT NULL UNIQUE,
+        venue TEXT,
         address TEXT NOT NULL,
         city VARCHAR(255) NOT NULL,
         state VARCHAR(255) NOT NULL,
@@ -154,9 +181,15 @@ CREATE TABLE
 -- Indexes
 CREATE INDEX idx_client_id_clients ON clients (id);
 
+CREATE INDEX idx_follower_id_followers ON followers (id);
+
 CREATE INDEX idx_client_email_clients ON clients (email);
 
 CREATE INDEX idx_client_email_pw_reset ON password_reset (email);
+
+CREATE INDEX idx_message_id_messages ON messages (id);
+
+CREATE INDEX idx_conversation_id_conversations ON conversations (id);
 
 -- Functions
 -- GetAllTicketsOwned Begins
