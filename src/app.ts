@@ -82,6 +82,9 @@ app.use(cors(corsOptions));
 //ROUTES
 app.use("/v1/auth", authRoute_v1);
 app.use("/v1/user", usersRoute_v1);
+app.get("/ping", (req, res) => {
+  res.send("pong");
+});
 
 // Crons
 import "./cron-jobs";
