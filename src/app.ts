@@ -12,7 +12,7 @@ import cors from "cors";
 import helmet from "helmet";
 // import rateLimit from "express-rate-limit";
 
-const port = process.env.PORT || 5000;
+const port = Number(process.env.PORT) || 5000;
 const app = express();
 // Set the trust proxy setting
 // app.set("trust proxy", true);
@@ -89,6 +89,6 @@ app.get("/ping", (req, res) => {
 // Crons
 import "./cron-jobs";
 
-const server = app.listen(port, () => {
+const server = app.listen(port, '0.0.0.0', () => {
   console.log(`Server has started on port ${port}`);
 });
