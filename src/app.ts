@@ -20,7 +20,7 @@ let whitelist;
 if (process.env.NODE_ENV !== "production") {
   whitelist = "*";
 } else {
-  app.set('trust proxy', 1); // Trust the first proxy in production
+  app.set("trust proxy", 1); // Trust the first proxy in production
   whitelist = [
     "https://admin.socket.io",
     process.env.URL,
@@ -32,7 +32,14 @@ if (process.env.NODE_ENV !== "production") {
 const corsOptions = {
   optionsSuccessStatus: 200,
   credentials: true,
-  origin: whitelist,
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // allow non-browser tools like curl/postman
+    if (whitelist === "*" || whitelist.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
 };
 
 // Rate limiting to prevent brute-force attacks
@@ -89,6 +96,6 @@ app.get("/ping", (req, res) => {
 // Crons
 import "./cron-jobs";
 
-const server = app.listen(port, '0.0.0.0', () => {
+const server = app.listen(port, "0.0.0.0", () => {
   console.log(`Server has started on port ${port}`);
 });
