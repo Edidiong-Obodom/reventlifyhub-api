@@ -135,7 +135,7 @@ const sendVerificationCode = async (req: Request, res: Response) => {
 
     //sends verification code to clients mail
     const msg = {
-      from: "Reventlify <reventlifyhub@outlook.com>", // sender address
+      from: "Reventlify <no-reply@reventlify.com>", // sender address
       to: email, // list of receivers
       subject: "Email Verification", // Subject line
       text: `Here is your verification code: ${emailVCode}`, // plain text body
@@ -305,7 +305,7 @@ const register = async (req: Request, res: Response) => {
 
     //Welcome Message
     const msg = {
-      from: "Reventlify <reventlifyhub@outlook.com>", // sender address
+      from: "Reventlify <no-reply@reventlify.com>", // sender address
       to: newUser.rows[0].email, // list of receivers
       subject: "Welcome To Reventlify", // Subject line
       text: `${newUser.rows[0].user_name} thank you for choosing Reventlify.`, // plain text body

@@ -509,7 +509,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
     const transport = nodemailer.createTransport(Helpers.mailCredentials);
 
     await transport.sendMail({
-      from: "Reventlify <reventlifyhub@outlook.com>",
+      from: "Reventlify <no-reply@reventlify.com>",
       to: "edijay17@gmail.com",
       subject: "Newly Created Regime",
       text: `Congrats ${userName} just successfully created ${newRegime.rows[0].name} a ${newRegime.rows[0].type} type event with Reventlify.`,
@@ -519,7 +519,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
               </strong> a ${newRegime.rows[0].type} type event with <strong>Reventlify</strong></p>`,
     });
     await transport.sendMail({
-      from: "Reventlify <reventlifyhub@outlook.com>",
+      from: "Reventlify <no-reply@reventlify.com>",
       to: email,
       subject: "Regime Creation Successful",
       text: `${userName} you have successfully created ${newRegime.rows[0].name} a ${newRegime.rows[0].type} type of event, thank you for choosing Reventlify.`,

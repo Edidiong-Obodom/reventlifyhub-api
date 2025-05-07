@@ -75,7 +75,7 @@ const sendPWResetCode = async (req: Request, res: Response) => {
 
     //sends verification code to clients mail
     const msg = {
-      from: "Reventlify <reventlifyhub@outlook.com>", // sender address
+      from: "Reventlify <no-reply@reventlify.com>", // sender address
       to: email, // list of receivers
       subject: "Password Reset", // Subject line
       text: `Here is your password reset code: ${pwResetCode}`, // plain text body

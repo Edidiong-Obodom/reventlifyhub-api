@@ -40,7 +40,7 @@ export const ticket_purchase_paystackWebhook = async ({
     const transporter = nodemailer.createTransport(Helpers.mailCredentials);
 
     const mailOptions = {
-      from: "Reventlify <reventlifyhub@outlook.com>",
+      from: "Reventlify <no-reply@reventlify.com>",
       to: email,
       subject: "Ticket Purchase Successful",
       text: `${capitalize(user_name)} you have successfully purchased ${Number(
