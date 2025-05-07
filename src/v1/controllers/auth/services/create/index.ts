@@ -161,6 +161,8 @@ const sendVerificationCode = async (req: Request, res: Response) => {
       toEmail: email,
     });
   } catch (error) {
+    console.log("sendVerificationCode: ", error);
+
     await Log.auditLogs({
       user: email,
       action: "Signup Send Code",
