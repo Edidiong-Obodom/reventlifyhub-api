@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { User } from "./createUser.dto";
 import * as bcrypt from "bcrypt";
-import * as nodemailer from "nodemailer";
 import { pool } from "../../../../../db";
 import * as Helpers from "../../../../../helpers/index";
 import randomString from "random-string";
@@ -130,9 +129,6 @@ const sendVerificationCode = async (req: Request, res: Response) => {
       [email, emailVCode, "pending", hashedPassword, userName]
     );
 
-    //credentials for email transportation
-    const transport = nodemailer.createTransport(Helpers.mailCredentials);
-
     //sends verification code to clients mail
     const msg = {
       from: "Reventlify <no-reply@reventlify.com>", // sender address
@@ -144,7 +140,13 @@ const sendVerificationCode = async (req: Request, res: Response) => {
     };
 
     // send mail with defined transport object
-    await transport.sendMail(msg);
+    await Helpers.sendMail({
+      email: msg.to,
+      subject: msg.subject,
+      mailBodyText: msg.text,
+      mailBodyHtml: msg.html,
+    });
+
     await Log.auditLogs({
       user: email,
       action: "Signup Send Code",
@@ -302,9 +304,6 @@ const register = async (req: Request, res: Response) => {
     // deletes client from limbo
     await pool.query("DELETE FROM limbo WHERE email = $1", [email]);
 
-    //credentials for email transportation
-    const transport = nodemailer.createTransport(Helpers.mailCredentials);
-
     //Welcome Message
     const msg = {
       from: "Reventlify <no-reply@reventlify.com>", // sender address
@@ -316,7 +315,12 @@ const register = async (req: Request, res: Response) => {
     };
 
     // send mail with defined transport object
-    await transport.sendMail(msg);
+    await Helpers.sendMail({
+      email: msg.to,
+      subject: msg.subject,
+      mailBodyText: msg.text,
+      mailBodyHtml: msg.html,
+    });
     await Log.auditLogs({
       user: email,
       action: "Signup Register",

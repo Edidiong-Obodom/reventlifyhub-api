@@ -1,7 +1,6 @@
 import { pool } from "../../../../../../db";
 import { TicketPurchase } from "./purchase";
 import * as Helpers from "../../../../../../helpers";
-import * as nodemailer from "nodemailer";
 import { capitalize } from "lodash";
 
 export const ticket_purchase_paystackWebhook = async ({
@@ -37,8 +36,6 @@ export const ticket_purchase_paystackWebhook = async ({
 
     const { name } = pricingDetails.rows[0];
     // Send email notification
-    const transporter = nodemailer.createTransport(Helpers.mailCredentials);
-
     const mailOptions = {
       from: "Reventlify <no-reply@reventlify.com>",
       to: email,
@@ -111,7 +108,7 @@ export const ticket_purchase_paystackWebhook = async ({
           : [pricingId, transactionId, userId, userId, "active"]
       );
     }
-    
+
     // Update available seats
     await pool.query(
       `UPDATE pricings SET available_seats = available_seats - $1 WHERE id = $2`,
@@ -120,7 +117,12 @@ export const ticket_purchase_paystackWebhook = async ({
     await pool.query("COMMIT");
 
     // send mail with defined transport object
-    await transporter.sendMail(mailOptions);
+    await Helpers.sendMail({
+      email: mailOptions.to,
+      subject: mailOptions.subject,
+      mailBodyText: mailOptions.text,
+      mailBodyHtml: mailOptions.html,
+    });
 
     return {
       status: 200,

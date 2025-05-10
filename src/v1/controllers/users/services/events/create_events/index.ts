@@ -2,7 +2,6 @@ import { Response } from "express";
 import { pool } from "../../../../../../db";
 import { ExtendedRequest } from "../../../../../../utilities/authenticateToken/authenticateToken.dto";
 import * as Helpers from "../../../../../../helpers";
-import * as nodemailer from "nodemailer";
 import * as bcrypt from "bcrypt";
 import cloudinary from "../../../../../../utilities/cloudinary";
 import { CreateRegimeType } from "./create_events_types";
@@ -506,24 +505,21 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
     );
     await pool.query("COMMIT");
     //credentials for email transportation
-    const transport = nodemailer.createTransport(Helpers.mailCredentials);
-
-    await transport.sendMail({
-      from: "Reventlify <no-reply@reventlify.com>",
-      to: "edijay17@gmail.com",
+    await Helpers.sendMail({
+      email: "edijay17@gmail.com",
       subject: "Newly Created Regime",
-      text: `Congrats ${userName} just successfully created ${newRegime.rows[0].name} a ${newRegime.rows[0].type} type event with Reventlify.`,
-      html: `<h1>Newly Created Regime</h1>
+      mailBodyText: `Congrats ${userName} just successfully created ${newRegime.rows[0].name} a ${newRegime.rows[0].type} type event with Reventlify.`,
+      mailBodyHtml: `<h1>Newly Created Regime</h1>
               <p>Congrats ${userName} just successfully created
               <strong>${newRegime.rows[0].name}
               </strong> a ${newRegime.rows[0].type} type event with <strong>Reventlify</strong></p>`,
     });
-    await transport.sendMail({
-      from: "Reventlify <no-reply@reventlify.com>",
-      to: email,
+
+    await Helpers.sendMail({
+      email,
       subject: "Regime Creation Successful",
-      text: `${userName} you have successfully created ${newRegime.rows[0].name} a ${newRegime.rows[0].type} type of event, thank you for choosing Reventlify.`,
-      html: `<h2>Regime Creation Successful</h2>
+      mailBodyText: `${userName} you have successfully created ${newRegime.rows[0].name} a ${newRegime.rows[0].type} type of event, thank you for choosing Reventlify.`,
+      mailBodyHtml: `<h2>Regime Creation Successful</h2>
               <p>${userName} you have successfully created
               <strong>${newRegime.rows[0].name}
               </strong> a ${newRegime.rows[0].type} type of event,

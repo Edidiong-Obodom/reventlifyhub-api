@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import * as bcrypt from "bcrypt";
-import * as nodemailer from "nodemailer";
 import { pool } from "../../../../../db";
 import * as Helpers from "../../../../../helpers/index";
 import randomString from "random-string";
@@ -70,9 +69,6 @@ const sendPWResetCode = async (req: Request, res: Response) => {
       [email, pwResetCode]
     );
 
-    //credentials for email transportation
-    const transport = nodemailer.createTransport(Helpers.mailCredentials);
-
     //sends verification code to clients mail
     const msg = {
       from: "Reventlify <no-reply@reventlify.com>", // sender address
@@ -84,7 +80,12 @@ const sendPWResetCode = async (req: Request, res: Response) => {
     };
 
     // send mail with defined transport object
-    await transport.sendMail(msg);
+    await Helpers.sendMail({
+      email: msg.to,
+      subject: msg.subject,
+      mailBodyText: msg.text,
+      mailBodyHtml: msg.html,
+    });
     await Log.auditLogs({
       user: email,
       action: "Password Reset Code",

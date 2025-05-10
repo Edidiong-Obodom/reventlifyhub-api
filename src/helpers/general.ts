@@ -1,5 +1,6 @@
 import { words, capitalize } from "lodash";
 import * as Helper from "./index";
+import { response } from "express";
 
 /**
  * Converts a string to a title case, capitalizing the first letter of each word.
@@ -69,4 +70,55 @@ export const februaryCheck = (date: string): boolean => {
   }
 
   return true;
+};
+
+/**
+ * Sends an email using the AlterMail external service.
+ *
+ * @param {Object} params - The parameters for the email.
+ * @param {string} params.email - The recipient's email address.
+ * @param {string} params.subject - The subject of the email.
+ * @param {string} params.mailBodyHtml - The HTML version of the email body.
+ * @param {string} params.mailBodyText - The plain text version of the email body.
+ *
+ * @returns {Promise<{ request: Response | undefined; response: any }>}
+ * An object containing the original fetch request and the parsed JSON response,
+ * or `undefined` values if the request fails.
+ */
+export const sendMail = async ({
+  email,
+  subject,
+  mailBodyHtml,
+  mailBodyText,
+}: {
+  email: string;
+  subject: string;
+  mailBodyHtml: string;
+  mailBodyText: string;
+}) => {
+  try {
+    const externalCall = await fetch(
+      `${process.env.ALTERMAIL_URL}/v1/user/email/send`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          token: `${process.env.ALTERMAIL_TOKEN}`,
+        },
+        body: JSON.stringify({
+          email,
+          subject,
+          mailBodyHtml,
+          mailBodyText,
+        }),
+      }
+    );
+
+    const response = await externalCall.json();
+
+    return { request: externalCall, response };
+  } catch (error) {
+    console.log("error sending mail: ", error);
+    return { request: undefined, response: undefined };
+  }
 };
