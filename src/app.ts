@@ -26,6 +26,7 @@ if (process.env.NODE_ENV !== "production") {
     process.env.URL,
     "https://api.paystack.co",
     "https://paystack.com",
+    "https://reventlify-web.vercel.app",
   ];
 }
 
