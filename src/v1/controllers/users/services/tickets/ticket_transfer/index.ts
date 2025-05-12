@@ -1,5 +1,4 @@
 import { Response } from "express";
-import * as nodemailer from "nodemailer";
 import { ExtendedRequest } from "../../../../../../utilities/authenticateToken/authenticateToken.dto";
 import * as Helpers from "../../../../../../helpers";
 import { pool } from "../../../../../../db";
@@ -119,28 +118,27 @@ export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
     );
 
     // Send email notification
-    const transporter = nodemailer.createTransport(Helpers.mailCredentials);
-
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: "Reventlify <no-reply@reventlify.com>",
       to: beneficiaryDetails.rows[0].email,
       subject: "Ticket Transfer",
-      text: `${capitalize(userName)} transferred one ${
-        ticketDetails.rows[0].pricing_name
-      } ticket(${ticket}) to you for the ${
-        ticketDetails.rows[0].regime_name
-      } event.`,
-      html: `${capitalize(userName)} transferred one ${
-        ticketDetails.rows[0].pricing_name
-      } ticket(${ticket}) to you for the ${
-        ticketDetails.rows[0].regime_name
-      } event.`,
+      text: `${userName} transferred one ${ticketDetails.rows[0].pricing_name} ticket(${ticket}) to you for the ${ticketDetails.rows[0].regime_name} event.`,
+      html: `
+                                  <h3 style="color: #111827;">Hey ${beneficiaryDetails.rows[0].user_name},</h3>
+                                  <p style="color: #374151;">
+                                  ${userName} transferred one ${ticketDetails.rows[0].pricing_name} ticket(${ticket}) to you for the ${ticketDetails.rows[0].regime_name} event...
+                                  </p>
+                                  <p style="margin-top: 30px; color: #6b7280;">Best regards,<br />The Reventlify Team</p>`,
     };
 
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error(`Error sending email: ${error.message}`);
-      }
+    await Helpers.sendMail({
+      email: mailOptions.to,
+      subject: mailOptions.subject,
+      mailBodyText: mailOptions.text,
+      mailBodyHtml: Helpers.mailHTMLBodyLayout({
+        subject: mailOptions.subject,
+        body: mailOptions.html,
+      }),
     });
 
     // insert ticket edit into logs

@@ -1,7 +1,6 @@
 import { pool } from "../../../../../../db";
 import { TicketPurchase } from "./purchase";
 import * as Helpers from "../../../../../../helpers";
-import { capitalize } from "lodash";
 
 export const ticket_purchase_paystackWebhook = async ({
   paymentStatus,
@@ -36,18 +35,23 @@ export const ticket_purchase_paystackWebhook = async ({
 
     const { name } = pricingDetails.rows[0];
     // Send email notification
-    const mailOptions = {
-      from: "Reventlify <no-reply@reventlify.com>",
-      to: email,
-      subject: "Ticket Purchase Successful",
-      text: `${capitalize(user_name)} you have successfully purchased ${Number(
+    const msg = {
+      from: "Reventlify <no-reply@reventlify.com>", // sender address
+      to: email, // list of receivers
+      subject: "Ticket Purchase Successful", // Subject line
+      text: `Hello ${user_name}, you have successfully purchased ${Number(
         numberOfTickets
-      )} ${name} ticket(s) for the regime ${regimeDetails.rows[0].name}.`,
-      html: `${capitalize(user_name)} you have successfully purchased ${Number(
-        numberOfTickets
-      )} ${name} ticket(s) for the regime <strong>${
+      )} ${name} ticket(s) for the regime ${regimeDetails.rows[0].name}.`, // plain text body
+      html: `
+                        <h3 style="color: #111827;">Hello ${user_name},</h3>
+                        <p style="color: #374151;">
+                          You have successfully purchased ${Number(
+                            numberOfTickets
+                          )} ${name} ticket(s) for the regime <strong>${
         regimeDetails.rows[0].name
-      }</strong>.`,
+      }</strong>.
+                        </p>
+                        <p style="margin-top: 30px; color: #6b7280;">Best regards,<br />The Reventlify Team</p>`, //HTML message
     };
 
     // Get all details ends
@@ -118,10 +122,13 @@ export const ticket_purchase_paystackWebhook = async ({
 
     // send mail with defined transport object
     await Helpers.sendMail({
-      email: mailOptions.to,
-      subject: mailOptions.subject,
-      mailBodyText: mailOptions.text,
-      mailBodyHtml: mailOptions.html,
+      email: msg.to,
+      subject: msg.subject,
+      mailBodyText: msg.text,
+      mailBodyHtml: Helpers.mailHTMLBodyLayout({
+        subject: msg.subject,
+        body: msg.html,
+      }),
     });
 
     return {

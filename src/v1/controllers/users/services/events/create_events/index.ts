@@ -504,26 +504,39 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       [newRegime.rows[0].creator_id, newRegime.rows[0].id, "creator"]
     );
     await pool.query("COMMIT");
-    //credentials for email transportation
+    //Mail to CEO
     await Helpers.sendMail({
       email: "edijay17@gmail.com",
       subject: "Newly Created Regime",
-      mailBodyText: `Congrats ${userName} just successfully created ${newRegime.rows[0].name} a ${newRegime.rows[0].type} type event with Reventlify.`,
-      mailBodyHtml: `<h1>Newly Created Regime</h1>
-              <p>Congrats ${userName} just successfully created
-              <strong>${newRegime.rows[0].name}
-              </strong> a ${newRegime.rows[0].type} type event with <strong>Reventlify</strong></p>`,
+      mailBodyText: `Hey Boss, Congrats ${userName} just successfully created ${newRegime.rows[0].name} a ${newRegime.rows[0].type} type event with Reventlify.`,
+      mailBodyHtml: Helpers.mailHTMLBodyLayout({
+        subject: "Newly Created Regime",
+        body: `
+                            <h3 style="color: #111827;">Hey Boss,</h3>
+                            <p style="color: #374151;">
+                              Congrats ${userName} just successfully created:
+                            </p>
+                            <p style="color: #6b7280;">
+                              ${newRegime.rows[0].name} a ${newRegime.rows[0].type} type event with Reventlify.
+                            </p>
+                            <p style="margin-top: 30px; color: #6b7280;">Best regards,<br />The Reventlify Team</p>`,
+      }),
     });
 
+    // Mail to Client
     await Helpers.sendMail({
       email,
       subject: "Regime Creation Successful",
-      mailBodyText: `${userName} you have successfully created ${newRegime.rows[0].name} a ${newRegime.rows[0].type} type of event, thank you for choosing Reventlify.`,
-      mailBodyHtml: `<h2>Regime Creation Successful</h2>
-              <p>${userName} you have successfully created
-              <strong>${newRegime.rows[0].name}
-              </strong> a ${newRegime.rows[0].type} type of event,
-              thank you for choosing <strong>Reventlify</strong>.</p>`,
+      mailBodyText: `Hey ${userName}, you have successfully created ${newRegime.rows[0].name} a ${newRegime.rows[0].type} type of event, thank you for choosing Reventlify.`,
+      mailBodyHtml: Helpers.mailHTMLBodyLayout({
+        subject: "Regime Creation Successful",
+        body: `
+                            <h3 style="color: #111827;">Hey ${userName},</h3>
+                            <p style="color: #374151;">
+                              You have successfully created ${newRegime.rows[0].name} a ${newRegime.rows[0].type} type of event, thank you for choosing <strong>Reventlify</strong>.
+                            </p>
+                            <p style="margin-top: 30px; color: #6b7280;">Best regards,<br />The Reventlify Team</p>`,
+      }),
     });
 
     await Log.auditLogs({

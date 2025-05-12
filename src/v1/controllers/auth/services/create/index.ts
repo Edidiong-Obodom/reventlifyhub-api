@@ -134,9 +134,21 @@ const sendVerificationCode = async (req: Request, res: Response) => {
       from: "Reventlify <no-reply@reventlify.com>", // sender address
       to: email, // list of receivers
       subject: "Email Verification", // Subject line
-      text: `Here is your verification code: ${emailVCode}`, // plain text body
-      html: `<h3>Email Verification</h3>
-      <p>Here is your verification code: <strong>${emailVCode}</strong></p>`, //HTML message
+      text: `Hello ${userName}, your One-Time Password (OTP) is: ${emailVCode}`, // plain text body
+      html: `
+                        <h3 style="color: #111827;">Hello ${userName},</h3>
+                        <p style="color: #374151;">
+                          Your One-Time Password (OTP) is:
+                        </p>
+                        <div
+                          style="font-size: 28px; font-weight: bold; color: #6366f1; text-align: center; margin: 60px 0;"
+                        >
+                          ${emailVCode}
+                        </div>
+                        <p style="color: #6b7280;">
+                          This code is valid for the next 10 minutes. If you didn't request this, please ignore this email or contact support: support@reventlify.com.
+                        </p>
+                        <p style="margin-top: 30px; color: #6b7280;">Best regards,<br />The Reventlify Team</p>`, //HTML message
     };
 
     // send mail with defined transport object
@@ -144,7 +156,10 @@ const sendVerificationCode = async (req: Request, res: Response) => {
       email: msg.to,
       subject: msg.subject,
       mailBodyText: msg.text,
-      mailBodyHtml: msg.html,
+      mailBodyHtml: Helpers.mailHTMLBodyLayout({
+        subject: msg.subject,
+        body: msg.html,
+      }),
     });
 
     await Log.auditLogs({
@@ -309,9 +324,13 @@ const register = async (req: Request, res: Response) => {
       from: "Reventlify <no-reply@reventlify.com>", // sender address
       to: newUser.rows[0].email, // list of receivers
       subject: "Welcome To Reventlify", // Subject line
-      text: `${newUser.rows[0].user_name} thank you for choosing Reventlify.`, // plain text body
-      html: `<h2>Welcome To Reventlify</h2>
-        <p>${newUser.rows[0].user_name} thank you for choosing <strong>Reventlify</strong>.</p>`, //HTML message
+      text: `Hello ${newUser.rows[0].user_name}, thank you for choosing Reventlify.`, // plain text body
+      html: `
+                        <h3 style="color: #111827;">Hello ${newUser.rows[0].user_name},</h3>
+                        <p style="color: #374151;">
+                          Thank you for choosing Reventlify
+                        </p>
+                        <p style="margin-top: 30px; color: #6b7280;">Best regards,<br />The Reventlify Team</p>`, //HTML message
     };
 
     // send mail with defined transport object
@@ -319,7 +338,10 @@ const register = async (req: Request, res: Response) => {
       email: msg.to,
       subject: msg.subject,
       mailBodyText: msg.text,
-      mailBodyHtml: msg.html,
+      mailBodyHtml: Helpers.mailHTMLBodyLayout({
+        subject: msg.subject,
+        body: msg.html,
+      }),
     });
     await Log.auditLogs({
       user: email,

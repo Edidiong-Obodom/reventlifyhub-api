@@ -74,9 +74,21 @@ const sendPWResetCode = async (req: Request, res: Response) => {
       from: "Reventlify <no-reply@reventlify.com>", // sender address
       to: email, // list of receivers
       subject: "Password Reset", // Subject line
-      text: `Here is your password reset code: ${pwResetCode}`, // plain text body
-      html: `<h3>Password Reset</h3>
-      <p>Here is your password reset code: <strong>${pwResetCode}</strong></p>`, //HTML message
+      text: `Hello ${user.rows[0].user_name}, here is your password reset code: ${pwResetCode}`, // plain text body
+      html: `
+                        <h3 style="color: #111827;">Hello ${user.rows[0].user_name},</h3>
+                        <p style="color: #374151;">
+                          Here is your password reset code:
+                        </p>
+                        <div
+                          style="font-size: 28px; font-weight: bold; color: #6366f1; text-align: center; margin: 60px 0;"
+                        >
+                          ${pwResetCode}
+                        </div>
+                        <p style="color: #6b7280;">
+                          This code is valid for the next 10 minutes. If you didn't request this, please ignore this email or contact support: support@reventlify.com.
+                        </p>
+                        <p style="margin-top: 30px; color: #6b7280;">Best regards,<br />The Reventlify Team</p>`, //HTML message
     };
 
     // send mail with defined transport object
@@ -84,7 +96,10 @@ const sendPWResetCode = async (req: Request, res: Response) => {
       email: msg.to,
       subject: msg.subject,
       mailBodyText: msg.text,
-      mailBodyHtml: msg.html,
+      mailBodyHtml: Helpers.mailHTMLBodyLayout({
+        subject: msg.subject,
+        body: msg.html,
+      }),
     });
     await Log.auditLogs({
       user: email,

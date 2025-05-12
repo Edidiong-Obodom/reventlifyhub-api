@@ -3,12 +3,12 @@ import { ExtendedRequest } from "../../../../../../utilities/authenticateToken/a
 import * as Helpers from "../../../../../../helpers";
 import { pool } from "../../../../../../db";
 import axios from "axios";
-import * as nodemailer from "nodemailer";
 import { getClientIp } from "../../../../../../utilities/logger/allLogs";
 import Log from "../../../../../../utilities/logger";
 
 export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
   const user = req.user;
+  const userName = req.userName;
   const email = req.email;
   const field = ["amount", "pricingId", "regimeId", "counter"];
   const currentDate = new Date();
@@ -270,20 +270,27 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
       await pool.query("COMMIT");
 
       // Send email notification
-      const transporter = nodemailer.createTransport(Helpers.mailCredentials);
-
       const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: "Reventlify <no-reply@reventlify.com>",
         to: email,
         subject: "Ticket Purchase Successful",
         text: `You have successfully purchased ${counter} ticket(s) for the regime ${regime.rows[0].name}.`,
-        html: `You have successfully purchased ${counter} ticket(s) for the regime <strong>${regime.rows[0].name}</strong>.`,
+        html: `
+                                  <h3 style="color: #111827;">Hey ${userName},</h3>
+                                  <p style="color: #374151;">
+                                    You have successfully purchased ${counter} ticket(s) for the regime <strong>${regime.rows[0].name}</strong>, thank you for choosing <strong>Reventlify</strong>.
+                                  </p>
+                                  <p style="margin-top: 30px; color: #6b7280;">Best regards,<br />The Reventlify Team</p>`,
       };
 
-      transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-          console.error(`Error sending email: ${error.message}`);
-        }
+      await Helpers.sendMail({
+        email,
+        subject: mailOptions.subject,
+        mailBodyText: mailOptions.text,
+        mailBodyHtml: Helpers.mailHTMLBodyLayout({
+          subject: mailOptions.subject,
+          body: mailOptions.html,
+        }),
       });
 
       await Log.auditLogs({
@@ -313,10 +320,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
 
     const realAmount = Number(amount * counter);
 
-    const affiliateId =
-      affiliate && affiliate !== user
-        ? affiliate
-        : "";
+    const affiliateId = affiliate && affiliate !== user ? affiliate : "";
 
     const { charge, paystackCharge, companyCharge, affiliateCharge } =
       Helpers.chargeHandler(realAmount, Number(counter), Number(amount));

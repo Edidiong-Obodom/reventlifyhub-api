@@ -1,6 +1,5 @@
 import { words, capitalize } from "lodash";
 import * as Helper from "./index";
-import { response } from "express";
 
 /**
  * Converts a string to a title case, capitalizing the first letter of each word.
@@ -94,7 +93,7 @@ export const sendMail = async ({
   email: string;
   subject: string;
   mailBodyHtml: string;
-  mailBodyText: string;
+  mailBodyText?: string;
 }) => {
   try {
     const externalCall = await fetch(
