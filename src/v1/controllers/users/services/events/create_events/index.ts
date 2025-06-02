@@ -8,6 +8,7 @@ import { CreateRegimeType } from "./create_events_types";
 import moment from "moment";
 import { getClientIp } from "../../../../../../utilities/logger/allLogs";
 import Log from "../../../../../../utilities/logger";
+import { spreader } from "spreader-utils";
 
 // Check for regime name availability
 export const nameAvailability = async (req: ExtendedRequest, res: Response) => {
@@ -196,6 +197,10 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
     regimeCountry,
     regimeWithdrawalPin,
     regimeMediaBase64,
+    regimeMediaBase64I,
+    regimeMediaBase64II,
+    regimeMediaBase64III,
+    regimeMediaBase64IV,
     regimeAffiliate,
     regimeStartDate,
     regimeStartTime,
@@ -431,7 +436,13 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
     }
 
     // Checks media file size
-    if (Helpers.sizeChecker(regimeMediaBase64).MB > 10) {
+    if (
+      Helpers.sizeChecker(regimeMediaBase64).MB > 10 ||
+      Helpers.sizeChecker(regimeMediaBase64I).MB > 10 ||
+      Helpers.sizeChecker(regimeMediaBase64II).MB > 10 ||
+      Helpers.sizeChecker(regimeMediaBase64III).MB > 10 ||
+      Helpers.sizeChecker(regimeMediaBase64IV).MB > 10
+    ) {
       await Log.auditLogs({
         user: req.email,
         action: "Regime Create",
@@ -446,20 +457,72 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       return res.status(400).json("Media larger than 10MB");
     }
     // Use Promise.all for Concurrent Operations
-    const [hashedPin, resultOfUpdate] = await Promise.all([
+    const [
+      hashedPin,
+      resultOfUpdate,
+      resultOfUpdateI,
+      resultOfUpdateII,
+      resultOfUpdateIII,
+      resultOfUpdateIv,
+    ] = await Promise.all([
       bcrypt.hash(regimeWithdrawalPin, 10),
       cloudinary.uploader.upload(regimeMediaBase64, { folder: "regime_media" }),
+      regimeMediaBase64I
+        ? cloudinary.uploader.upload(regimeMediaBase64I, {
+            folder: "regime_media",
+          })
+        : { secure_url: undefined, public_id: undefined },
+      regimeMediaBase64II
+        ? cloudinary.uploader.upload(regimeMediaBase64II, {
+            folder: "regime_media",
+          })
+        : { secure_url: undefined, public_id: undefined },
+      regimeMediaBase64III
+        ? cloudinary.uploader.upload(regimeMediaBase64III, {
+            folder: "regime_media",
+          })
+        : { secure_url: undefined, public_id: undefined },
+      regimeMediaBase64IV
+        ? cloudinary.uploader.upload(regimeMediaBase64IV, {
+            folder: "regime_media",
+          })
+        : { secure_url: undefined, public_id: undefined },
     ]);
 
     await pool.query("BEGIN");
+
+    const extraQueryUtil = spreader(
+      [
+        "media_i",
+        "media_id_i",
+        "media_ii",
+        "media_id_ii",
+        "media_iii",
+        "media_id_iii",
+        "media_iv",
+        "media_id_iv",
+      ],
+      [
+        resultOfUpdateI.secure_url,
+        resultOfUpdateI.public_id,
+        resultOfUpdateII.secure_url,
+        resultOfUpdateII.public_id,
+        resultOfUpdateIII.secure_url,
+        resultOfUpdateIII.public_id,
+        resultOfUpdateIv.secure_url,
+        resultOfUpdateIv.public_id,
+      ],
+      18
+    );
+
     // creates the regime
     const newRegime = await pool.query(
       `INSERT INTO regimes(
         creator_id, name, address, city, state, country, withdrawal_pin, type, 
         media, media_id, balance, affiliate, status, start_date, start_time, 
-        end_date, end_time, description) 
+        end_date, end_time, description${extraQueryUtil.name}) 
         VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 
-        $16, $17, $18) RETURNING *`,
+        $16, $17, $18${extraQueryUtil.numberDollar}) RETURNING *`,
       [
         userId,
         regimeName.trim(),
@@ -479,6 +542,7 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
         regimeEndDate,
         regimeEndTime,
         regimeDescription,
+        ...extraQueryUtil.value,
       ]
     );
 

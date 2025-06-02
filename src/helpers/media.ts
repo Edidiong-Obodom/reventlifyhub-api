@@ -7,11 +7,23 @@
 export const sizeChecker = (
   base64: string
 ): { Byte: number; KB: number; MB: number } => {
-  const buffer = Buffer.from(base64.substring(base64.indexOf(",") + 1));
-  const sizes = {
-    Byte: buffer.length,
-    KB: ((buffer.length * 6) / 8) * Math.pow(10, -3),
-    MB: ((buffer.length * 6) / 8) * Math.pow(10, -6),
-  };
-  return sizes;
+  if (
+    typeof base64 === "string" &&
+    base64.length > 0 &&
+    base64.includes("base64")
+  ) {
+    const buffer = Buffer.from(base64.substring(base64.indexOf(",") + 1));
+    const sizes = {
+      Byte: buffer.length,
+      KB: ((buffer.length * 6) / 8) * Math.pow(10, -3),
+      MB: ((buffer.length * 6) / 8) * Math.pow(10, -6),
+    };
+    return sizes;
+  } else {
+    return {
+      Byte: 0,
+      KB: 0,
+      MB: 0,
+    };
+  }
 };

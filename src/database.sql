@@ -95,6 +95,14 @@ CREATE TABLE
         description TEXT,
         media TEXT NOT NULL,
         media_id TEXT NOT NULL,
+        media_i TEXT,
+        media_id_i TEXT,
+        media_ii TEXT,
+        media_id_ii TEXT,
+        media_iii TEXT,
+        media_id_iii TEXT,
+        media_iv TEXT,
+        media_id_iv TEXT,
         balance NUMERIC(17, 2) NOT NULL DEFAULT 0.00,
         affiliate BOOLEAN NOT NULL DEFAULT false,
         status VARCHAR(15) NOT NULL DEFAULT 'pending',
@@ -643,3 +651,12 @@ EXECUTE FUNCTION update_balance_and_create_credit();
 
 -- delete trigger
 DROP TRIGGER IF EXISTS after_transaction_update ON table_name;
+
+alter table regimes add column media_i TEXT,
+        add column media_id_i TEXT,
+        add column media_ii TEXT,
+        add column media_id_ii TEXT,
+        add column media_iii TEXT,
+        add column media_id_iii TEXT,
+        add column media_iv TEXT,
+        add column media_id_iv TEXT;

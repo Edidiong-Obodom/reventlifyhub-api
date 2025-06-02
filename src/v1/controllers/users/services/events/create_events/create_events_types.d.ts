@@ -10,6 +10,10 @@ export interface CreateRegimeType {
   regimeCountry: string;
   regimeWithdrawalPin: string;
   regimeMediaBase64: string;
+  regimeMediaBase64I?: string;
+  regimeMediaBase64II?: string;
+  regimeMediaBase64III?: string;
+  regimeMediaBase64IV?: string;
   regimeAffiliate: boolean;
   regimeStartDate: string;
   regimeStartTime: string;
