@@ -13,12 +13,12 @@ function authenticateToken(
 ) {
   const authHeader = req.headers["authorization"]; // Bearer TOKEN
   const token = authHeader?.split(" ")[1];
-  if (token == null) return res.status(401).json({ error: "Null Token" });
+  if (token == null) return res.status(401).json({ message: "Null Token" });
   jwt.verify(
     token,
     process.env.ACCESS_TOKEN_SECRET,
     (error: any, user: ExtendedRequest) => {
-      if (error) return res.status(403).json({ error: error.message });
+      if (error) return res.status(403).json({ message: error.message });
       req.user = user.user;
       req.email = user.email;
       req.firstName = user.firstName;
