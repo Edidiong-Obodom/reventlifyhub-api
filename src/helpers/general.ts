@@ -121,3 +121,21 @@ export const sendMail = async ({
     return { request: undefined, response: undefined };
   }
 };
+
+/**
+ * Determines whether to use "a" or "an" before a given word based on its first letter.
+ *
+ * @param {string} str - The word to evaluate.
+ * @returns {string} - Returns "an" if the word starts with a vowel sound, otherwise "a".
+ *
+ * @example
+ * aOrAn("apple"); // returns "an"
+ * aOrAn("banana"); // returns "a"
+ */
+export const aOrAn = (str: string): "a" | "an" => {
+  if (!str || typeof str !== "string") return "a"; // Default to 'a' if input is invalid
+
+  const firstLetter = str.trim().charAt(0).toLowerCase();
+
+  return ["a", "e", "i", "o", "u"].includes(firstLetter) ? "an" : "a";
+};
