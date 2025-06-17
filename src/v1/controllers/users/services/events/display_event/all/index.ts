@@ -2,13 +2,16 @@ import { Response } from "express";
 import { ExtendedRequest } from "../../../../../../../utilities/authenticateToken/authenticateToken.dto";
 import { pool } from "../../../../../../../db";
 
-export const byPopularity = async (req: ExtendedRequest, res: Response) => {
+export const getAllEvents = async (req: ExtendedRequest, res: Response) => {
   try {
     const {
       country,
       state,
-      address,
       city,
+      address,
+      id,
+      name,
+      venue,
       page = "1",
       limit = "20",
     } = req.query;
@@ -82,6 +85,18 @@ export const byPopularity = async (req: ExtendedRequest, res: Response) => {
       conditions.push(`r.address ILIKE $${values.length + 1}`);
       values.push(`%${address}%`);
     }
+    if (id) {
+      conditions.push(`r.id = $${values.length + 1}`);
+      values.push(id);
+    }
+    if (name) {
+      conditions.push(`r.name ILIKE $${values.length + 1}`);
+      values.push(`%${name}%`);
+    }
+    if (venue) {
+      conditions.push(`r.venue ILIKE $${values.length + 1}`);
+      values.push(`%${venue}%`);
+    }
 
     if (conditions.length > 0) {
       baseQuery += ` AND ${conditions.join(" AND ")}`;
@@ -89,7 +104,7 @@ export const byPopularity = async (req: ExtendedRequest, res: Response) => {
 
     baseQuery += `
       GROUP BY r.id, c.id
-      ORDER BY total_ticket_sales DESC
+      ORDER BY r.created_at DESC
       LIMIT $${values.length + 1} OFFSET $${values.length + 2};
     `;
 
@@ -104,7 +119,7 @@ export const byPopularity = async (req: ExtendedRequest, res: Response) => {
       limit: Number(limit),
     });
   } catch (error) {
-    console.error("Error fetching popular events:", error);
+    console.error("Error fetching events with creator info:", error);
     return res
       .status(500)
       .json({ success: false, message: "Internal server error" });

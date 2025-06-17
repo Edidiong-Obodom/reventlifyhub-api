@@ -22,6 +22,8 @@ export const isValidRegimeType = (
     "party",
     "sport",
     "talent-show",
+    "exhibition",
+    "fashion",
   ];
 
   return {

@@ -32,4 +32,6 @@ export type RegimeType =
   | "festival"
   | "party"
   | "sport"
-  | "talent-show";
+  | "talent-show"
+  | "exhibition"
+  | "fashion";

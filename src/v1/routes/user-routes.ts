@@ -5,6 +5,7 @@ import {
   createRegime,
   editRegime,
   fetchImage,
+  getAllEvents,
   instagramBasicDisplayInit,
   nameAvailability,
   regimeImageEdit,
@@ -39,12 +40,8 @@ router.patch(
 // ========== Edit regime details ==========
 
 // ========== View regimes ==========
-router.get(
-  "/regime/view/popular",
-  authenticateToken,
-  allRateLimiter,
-  byPopularity
-);
+router.get("/regime/view", allRateLimiter, getAllEvents);
+router.get("/regime/view/popular", allRateLimiter, byPopularity);
 // ========== View regimes ==========
 
 // Ticket purchase

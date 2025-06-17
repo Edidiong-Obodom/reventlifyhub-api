@@ -518,14 +518,15 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
     // creates the regime
     const newRegime = await pool.query(
       `INSERT INTO regimes(
-        creator_id, name, address, city, state, country, withdrawal_pin, type, 
+        creator_id, name, venue, address, city, state, country, withdrawal_pin, type, 
         media, media_id, balance, affiliate, status, start_date, start_time, 
         end_date, end_time, description${extraQueryUtil.name}) 
         VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 
-        $16, $17, $18${extraQueryUtil.numberDollar}) RETURNING *`,
+        $16, $17, $18, $19${extraQueryUtil.numberDollar}) RETURNING *`,
       [
         userId,
         regimeName.trim(),
+        regimeVenue,
         regimeAddress,
         regimeCity.toLowerCase(),
         regimeState.toLowerCase(),
@@ -572,7 +573,11 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
     await Helpers.sendMail({
       email: "edijay17@gmail.com",
       subject: "Newly Created Regime",
-      mailBodyText: `Hey Boss, Congrats ${userName} just successfully created ${newRegime.rows[0].name} ${Helpers.aOrAn(newRegime.rows[0].type)} ${newRegime.rows[0].type} type event with Reventlify.`,
+      mailBodyText: `Hey Boss, Congrats ${userName} just successfully created ${
+        newRegime.rows[0].name
+      } ${Helpers.aOrAn(newRegime.rows[0].type)} ${
+        newRegime.rows[0].type
+      } type event with Reventlify.`,
       mailBodyHtml: Helpers.mailHTMLBodyLayout({
         subject: "Newly Created Regime",
         body: `
@@ -581,7 +586,11 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
                               Congrats ${userName} just successfully created:
                             </p>
                             <p style="color: #6b7280;">
-                              ${newRegime.rows[0].name} ${Helpers.aOrAn(newRegime.rows[0].type)} ${newRegime.rows[0].type} type event with Reventlify.
+                              <strong>${
+                                newRegime.rows[0].name
+                              }</strong> ${Helpers.aOrAn(
+          newRegime.rows[0].type
+        )} ${newRegime.rows[0].type} type event with Reventlify.
                             </p>
                             <p style="margin-top: 30px; color: #6b7280;">Best regards,<br />The Reventlify Team</p>`,
       }),
@@ -591,13 +600,23 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
     await Helpers.sendMail({
       email,
       subject: "Regime Creation Successful",
-      mailBodyText: `Hey ${userName}, you have successfully created ${newRegime.rows[0].name} ${Helpers.aOrAn(newRegime.rows[0].type)} ${newRegime.rows[0].type} type of event, thank you for choosing Reventlify.`,
+      mailBodyText: `Hey ${userName}, you have successfully created ${
+        newRegime.rows[0].name
+      } ${Helpers.aOrAn(newRegime.rows[0].type)} ${
+        newRegime.rows[0].type
+      } type of event, thank you for choosing Reventlify.`,
       mailBodyHtml: Helpers.mailHTMLBodyLayout({
         subject: "Regime Creation Successful",
         body: `
                             <h3 style="color: #111827;">Hey ${userName},</h3>
                             <p style="color: #374151;">
-                              You have successfully created ${newRegime.rows[0].name} ${Helpers.aOrAn(newRegime.rows[0].type)} ${newRegime.rows[0].type} type of event, thank you for choosing <strong>Reventlify</strong>.
+                              You have successfully created <strong>${
+                                newRegime.rows[0].name
+                              }</strong> ${Helpers.aOrAn(
+          newRegime.rows[0].type
+        )} ${
+          newRegime.rows[0].type
+        } type of event, thank you for choosing <strong>Reventlify</strong>.
                             </p>
                             <p style="margin-top: 30px; color: #6b7280;">Best regards,<br />The Reventlify Team</p>`,
       }),
