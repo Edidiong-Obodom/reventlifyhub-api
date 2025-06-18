@@ -40,8 +40,8 @@ router.patch(
 // ========== Edit regime details ==========
 
 // ========== View regimes ==========
-router.get("/regime/view", allRateLimiter, getAllEvents);
-router.get("/regime/view/popular", allRateLimiter, byPopularity);
+router.get("/regime/view", getAllEvents);
+router.get("/regime/view/popular", byPopularity);
 // ========== View regimes ==========
 
 // Ticket purchase
