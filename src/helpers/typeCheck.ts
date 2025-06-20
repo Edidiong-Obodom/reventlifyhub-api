@@ -9,7 +9,7 @@ export const isValidRegimeType = (
   regimeType: string
 ): { status: boolean; message: string } => {
   const allTypes =
-    "concert, conference, theatre, pageantry, service, education, carnival, festival, party, sport, talent-show";
+    "concert, conference, theatre, pageantry, service, education, carnival, festival, party, sport, talent-show, exhibition, fashion";
   const validRegimeTypes: RegimeType[] = [
     "concert",
     "conference",

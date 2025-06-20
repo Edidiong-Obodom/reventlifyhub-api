@@ -9,6 +9,7 @@ import {
   instagramBasicDisplayInit,
   nameAvailability,
   regimeImageEdit,
+  searchEvents,
   ticketPurchase,
   ticketTransfer,
 } from "../controllers/users/usersController";
@@ -40,6 +41,7 @@ router.patch(
 // ========== Edit regime details ==========
 
 // ========== View regimes ==========
+router.get("/regime/search", searchEvents);
 router.get("/regime/view", getAllEvents);
 router.get("/regime/view/popular", byPopularity);
 // ========== View regimes ==========
