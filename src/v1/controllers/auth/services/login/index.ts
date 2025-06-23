@@ -12,7 +12,6 @@ const login = async (req: Request, res: Response) => {
   const requiredFields = ["email", "password"];
   const currentDate = new Date();
   const { ip, ipLookUp } = await getClientIp(req);
-  
 
   // check data for each field in the body and validate format
   for (const field of requiredFields) {
@@ -105,6 +104,7 @@ const login = async (req: Request, res: Response) => {
       user: user.rows[0].id,
       email,
       firstName: user.rows[0].first_name,
+      userName: user.rows[0].user_name,
       lastName: user.rows[0].last_name,
       nationality: user.rows[0].nationality,
       permissions: {},
