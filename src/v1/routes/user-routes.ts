@@ -10,7 +10,9 @@ import {
   nameAvailability,
   regimeImageEdit,
   searchEvents,
+  ticketList,
   ticketPurchase,
+  ticketSearch,
   ticketTransfer,
 } from "../controllers/users/usersController";
 import { paystackWebhook } from "../controllers/users/payments";
@@ -46,11 +48,33 @@ router.get("/regime/view", getAllEvents);
 router.get("/regime/view/popular", byPopularity);
 // ========== View regimes ==========
 
+// ========== Ticket actions ==========
 // Ticket purchase
-router.post("/ticket/purchase", authenticateToken, ticketPurchase);
+router.post("/tickets/purchase", authenticateToken, ticketPurchase);
 
 // Ticket transfer
-router.post("/ticket/transfer", authenticateToken, ticketTransfer);
+router.post("/tickets/transfer", authenticateToken, ticketTransfer);
+
+// Ticket list
+router.get("/tickets/list", authenticateToken, allRateLimiter, ticketList);
+
+// Ticket search
+router.get("/tickets/search", authenticateToken, allRateLimiter, ticketSearch);
+// ========== Ticket actions ==========
+
+// ========== Transaction actions ==========
+// Ticket list
+router.get("/transactions/list", authenticateToken, allRateLimiter, ticketList);
+
+// Ticket search
+router.get(
+  "/transactions/search",
+  authenticateToken,
+  allRateLimiter,
+  ticketSearch
+);
+// ========== Transaction actions ==========
+
 // ========== Services ==========
 
 // ========== Payments ==========
