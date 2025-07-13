@@ -1,21 +1,52 @@
 import { Response } from "express";
 import { pool } from "../../../../../../db";
-import * as Helpers from "../../../../../../helpers";
 import { ExtendedRequest } from "../../../../../../utilities/authenticateToken/authenticateToken.dto";
 
+/**
+ * Allows user to **search their transaction history** with filters and pagination.
+ *
+ * Searchable fields:
+ * - Regime name
+ * - Transaction type
+ * - Transaction status
+ *
+ * Filters:
+ * - Search query (`searchTerm`)
+ * - Date range (`startDate`, `endDate`)
+ * - Automatically excludes transactions involving company or regime balances
+ *   by applying the following logic:
+ *
+ *   Shows only if:
+ *   - inter-credit: for client (e.g., affiliate reward)
+ *   - inter-debit: from same client to payment gateway (non-recursive)
+ *   - intra-credit: internal credit to self (e.g., refunds)
+ *   - intra-debit: debit without specific beneficiary (e.g., ticket purchase)
+ *
+ * Pagination:
+ * - Query params: `page`, `limit`
+ *
+ * Response: JSON with `data[]`, `page`, `limit`, and `total`
+ */
 export const transactionSearch = async (
   req: ExtendedRequest,
   res: Response
 ) => {
   const userId = req.user;
-  const { search, page = 1, limit = 10, startDate, endDate } = req.query as any;
+  const {
+    searchTerm,
+    page = 1,
+    limit = 10,
+    startDate,
+    endDate,
+  } = req.query as any;
   const offset = (page - 1) * limit;
 
   const params: any[] = [userId];
-  let whereClause = `WHERE t.client_id = $1`;
 
-  if (search) {
-    params.push(`%${search.toLowerCase()}%`);
+  let whereClause = `WHERE (t.client_id = $1 OR t.beneficiary = $1)`;
+
+  if (searchTerm) {
+    params.push(`%${searchTerm.toLowerCase()}%`);
     whereClause += ` AND (
       LOWER(r.name) LIKE $${params.length} OR
       LOWER(t.transaction_type) LIKE $${params.length} OR
@@ -29,6 +60,15 @@ export const transactionSearch = async (
       params.length
     }`;
   }
+
+  whereClause += `
+  AND (
+    (t.transaction_type = 'inter-credit' AND t.company IS NULL AND t.beneficiary IS NOT NULL AND t.beneficiary = $1)
+    OR (t.transaction_type = 'inter-debit' AND t.company IS NULL AND t.is_recursion = false)
+    OR (t.transaction_type = 'intra-credit' AND t.company IS NULL AND t.beneficiary IS NOT NULL AND t.client_id = t.beneficiary)
+    OR (t.transaction_type = 'intra-debit' AND t.company IS NULL AND t.beneficiary IS NULL)
+  )
+`;
 
   try {
     const result = await pool.query(

@@ -70,14 +70,46 @@ export const ticketList = async (req: ExtendedRequest, res: Response) => {
 
     const result = await pool.query(query, values);
 
-    return res.status(200).json({
-      message: "Tickets retrieved successfully",
-      data: result.rows,
-      meta: {
-        page: Number(page),
-        limit: Number(limit),
-        count: result.rowCount,
+    const structuredTickets = result.rows.map((row) => ({
+      id: row.id,
+      pricing_id: row.pricing_id,
+      owner_id: row.owner_id,
+      buyer_id: row.buyer_id,
+      transaction_id: row.transaction_id,
+      is_transferred: row.is_transferred,
+      created_at: row.created_at,
+      pricing: {
+        name: row.pricing_name,
+        amount: Number(row.pricing_amount),
+        regime: {
+          id: row.regime_id,
+          name: row.regime_name,
+          venue: row.venue,
+          address: row.address,
+          city: row.city,
+          state: row.state,
+          country: row.country,
+          type: row.type,
+          media: row.media,
+          status: row.regime_status,
+          start_date: row.start_date,
+          end_date: row.end_date,
+          start_time: row.start_time,
+          end_time: row.end_time,
+          creator: {
+            id: row.creator_id,
+            user_name: row.creator_user_name,
+          },
+        },
       },
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: structuredTickets,
+      page: Number(page),
+      limit: Number(limit),
+      total: result.rowCount,
     });
   } catch (error) {
     console.error("Error fetching tickets:", error);

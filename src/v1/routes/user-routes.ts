@@ -17,6 +17,10 @@ import {
 } from "../controllers/users/usersController";
 import { paystackWebhook } from "../controllers/users/payments";
 import { allRateLimiter } from "../../utilities/rate-limit/all-rate-limit";
+import {
+  transactionList,
+  transactionSearch,
+} from "../controllers/users/services/transactions";
 
 const router = Router();
 
@@ -64,14 +68,19 @@ router.get("/tickets/search", authenticateToken, allRateLimiter, ticketSearch);
 
 // ========== Transaction actions ==========
 // Ticket list
-router.get("/transactions/list", authenticateToken, allRateLimiter, ticketList);
+router.get(
+  "/transactions/list",
+  authenticateToken,
+  allRateLimiter,
+  transactionList
+);
 
 // Ticket search
 router.get(
   "/transactions/search",
   authenticateToken,
   allRateLimiter,
-  ticketSearch
+  transactionSearch
 );
 // ========== Transaction actions ==========
 

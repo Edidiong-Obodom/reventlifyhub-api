@@ -44,7 +44,7 @@ export const paystackStatusHandler = (theEvent: string, theStatus: string) => {
  * @param {number} moneyTotal - The total amount of money involved in the transaction.
  * @param {number} amountOfTickets - The number of tickets being purchased.
  * @param {number} ticketPrice - The price of a single ticket.
- * @returns {{ paystackCharge: number; charge: number }} An object containing the Paystack charge and the custom charge.
+ * @returns {{ paystackCharge: number; charge: number; companyCharge: number; affiliateCharge: number; fullMoney: number }} An object containing the Paystack charge and the custom charge.
  *
  * The function calculates the Paystack charge based on the total amount of money involved in the transaction:
  * - If the money total is less than 2500, the charge is 1.5% of the total.
@@ -53,8 +53,7 @@ export const paystackStatusHandler = (theEvent: string, theStatus: string) => {
  *
  * The custom charge is determined based on the price of a single ticket:
  * - If the ticket price is 1000 Naira or less, the charge is 100 Naira per ticket.
- * - If the ticket price is between 1001 and 5999 Naira, the charge is 300 Naira per ticket.
- * - If the ticket price is 5000 Naira or more, the charge is 5% of the ticket price per ticket.
+ * - If the ticket price is 1001 Naira or more, the charge is 5% of the ticket price per ticket.
  *
  * @example
  * // Calculate charges for a transaction with a total of 3000 Naira, 2 tickets, each costing 1500 Naira.
@@ -72,58 +71,53 @@ export const chargeHandler = (
   charge: number;
   companyCharge: number;
   affiliateCharge: number;
+  fullMoney: number;
 } => {
   let paystackCharge;
+  const fullMoneyWithout100 = moneyTotal / 0.985;
+  const fullMoneyPlus100 = (moneyTotal + 100) / 0.985;
+  let fullMoney;
   //   Actual charge paystack takes per transaction
   const actualCharge = () => {
-    if (moneyTotal < 2500) {
-      paystackCharge = (moneyTotal * 1.5) / 100;
-    } else if (moneyTotal >= 2500 && moneyTotal <= 125500) {
-      paystackCharge = (moneyTotal * 1.5) / 100 + 100;
+    if (fullMoneyWithout100 < 2500) {
+      fullMoney = fullMoneyWithout100;
+      paystackCharge = parseFloat(((fullMoney * 1.5) / 100).toFixed(2));
+    } else if (fullMoneyPlus100 >= 2500 && fullMoneyPlus100 <= 125500) {
+      fullMoney = fullMoneyPlus100;
+      paystackCharge = parseFloat(((fullMoney * 1.5) / 100 + 100).toFixed(2));
     } else {
+      fullMoney = moneyTotal + 2000;
       paystackCharge = 2000;
     }
   };
 
   actualCharge();
   let charge = 0;
-  let profit = 0;
   let affiliateCharge = 0;
   let companyCharge = 0;
 
   //   return actual charge and our own charge
   if (ticketPrice <= 1000) {
     charge = 100 * amountOfTickets;
-    profit = charge - paystackCharge;
-    affiliateCharge = profit / 2;
-    companyCharge = profit / 2;
+    affiliateCharge = charge / 2;
+    companyCharge = charge / 2;
     return {
       paystackCharge,
       charge,
       affiliateCharge,
       companyCharge,
-    };
-  } else if (ticketPrice > 1000 && ticketPrice <= 5999) {
-    charge = 300 * amountOfTickets;
-    profit = charge - paystackCharge;
-    affiliateCharge = profit / 2;
-    companyCharge = profit / 2;
-    return {
-      paystackCharge,
-      charge,
-      affiliateCharge,
-      companyCharge,
+      fullMoney,
     };
   } else {
     charge = ((ticketPrice * 5) / 100) * amountOfTickets;
-    profit = charge - paystackCharge;
-    affiliateCharge = profit / 2;
-    companyCharge = profit / 2;
+    affiliateCharge = charge / 2;
+    companyCharge = charge / 2;
     return {
       paystackCharge,
       charge,
       affiliateCharge,
       companyCharge,
+      fullMoney,
     };
   }
 };

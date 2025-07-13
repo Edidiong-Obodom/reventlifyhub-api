@@ -29,6 +29,7 @@ export const ticketSearch = async (req: ExtendedRequest, res: Response) => {
         LOWER(p.name) LIKE LOWER($${values.length + 1}) OR 
         CAST(p.amount AS TEXT) LIKE $${values.length + 1} OR 
         LOWER(r.name) LIKE LOWER($${values.length + 1}) OR 
+        LOWER(t.id) LIKE LOWER($${values.length + 1}) OR 
         LOWER(r.status) LIKE LOWER($${values.length + 1})
       )`);
       values.push(`%${searchTerm}%`);
@@ -82,14 +83,46 @@ export const ticketSearch = async (req: ExtendedRequest, res: Response) => {
 
     const result = await pool.query(query, values);
 
+    const structuredTickets = result.rows.map((row) => ({
+      id: row.id,
+      pricing_id: row.pricing_id,
+      owner_id: row.owner_id,
+      buyer_id: row.buyer_id,
+      transaction_id: row.transaction_id,
+      is_transferred: row.is_transferred,
+      created_at: row.created_at,
+      pricing: {
+        name: row.pricing_name,
+        amount: Number(row.pricing_amount),
+        regime: {
+          id: row.regime_id,
+          name: row.regime_name,
+          venue: row.venue,
+          address: row.address,
+          city: row.city,
+          state: row.state,
+          country: row.country,
+          type: row.type,
+          media: row.media,
+          status: row.regime_status,
+          start_date: row.start_date,
+          end_date: row.end_date,
+          start_time: row.start_time,
+          end_time: row.end_time,
+          creator: {
+            id: row.creator_id,
+            user_name: row.creator_user_name,
+          },
+        },
+      },
+    }));
+
     return res.status(200).json({
       message: "Search results",
-      data: result.rows,
-      meta: {
-        page: Number(page),
-        limit: Number(limit),
-        count: result.rowCount,
-      },
+      data: structuredTickets,
+      page: Number(page),
+      limit: Number(limit),
+      total: result.rowCount,
     });
   } catch (error) {
     console.error("Error searching tickets:", error);

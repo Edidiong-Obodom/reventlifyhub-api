@@ -16,7 +16,10 @@ export const requiredFields = (
 } => {
   // check data for each field in the body and validate format
   for (const field of fields) {
-    if (!body?.[field]) {
+    if (
+      body?.[field] === undefined ||
+      (typeof body?.[field] === "string" && body?.[field] === "")
+    ) {
       return {
         success: false,
         message: `${field} field in the request ${

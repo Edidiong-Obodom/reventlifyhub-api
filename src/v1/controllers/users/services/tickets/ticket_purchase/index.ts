@@ -322,19 +322,25 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
 
     const affiliateId = affiliate && affiliate !== user ? affiliate : "";
 
-    const { charge, paystackCharge, companyCharge, affiliateCharge } =
-      Helpers.chargeHandler(realAmount, Number(counter), Number(amount));
+    const {
+      charge,
+      paystackCharge,
+      companyCharge,
+      affiliateCharge,
+      fullMoney,
+    } = Helpers.chargeHandler(realAmount, Number(counter), Number(amount));
 
     const regimeMoney = realAmount - charge;
+    const actualAmount = Math.floor(fullMoney);
 
     const data = [
       user,
       regimeId,
       "ticket-purchase",
       "inter-debit",
-      Number(amount * counter),
-      Number(charge - paystackCharge),
-      paystackCharge,
+      Number(actualAmount + 1),
+      charge,
+      Math.ceil(paystackCharge),
       regimeMoney,
       "ngn",
       "pending",
@@ -362,7 +368,7 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
     // params
     const params = JSON.stringify({
       email: email,
-      amount: Number(amount * counter) * 100,
+      amount: Number(actualAmount + 1) * 100,
       metadata: {
         data: {
           regimeId: regimeId,
@@ -418,6 +424,8 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
       },
     });
   } catch (error) {
+    console.log(error);
+
     await pool.query("ROLLBACK");
     await Log.auditLogs({
       user: email,
