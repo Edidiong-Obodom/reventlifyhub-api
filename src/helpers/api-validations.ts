@@ -95,17 +95,6 @@ export const getIp = (req: Request | ExtendedRequest): GetClientIpResult => {
 
   const internalRealIp = req.headers["x-real-client-ip"] as string | undefined;
 
-  console.log("internalRealIp: ", internalRealIp);
-  console.log(
-    `${req.headers["x-internal-auth"]}`,
-    req.headers["x-internal-auth"]
-  );
-  console.log(
-    "process.env.INTERNAL_SHARED_SECRET: ",
-    process.env.INTERNAL_SHARED_SECRET
-  );
-  console.log("trustedInternalHeader: ", trustedInternalHeader);
-
   if (trustedInternalHeader && internalRealIp) {
     return {
       ip: internalRealIp,
