@@ -9,6 +9,8 @@ export const getClientIp = async (req: Request | ExtendedRequest) => {
   // const ipInfoWrapper = new IPinfoWrapper(process.env.IPINFO_TOKEN);
   let ip: string;
 
+  console.log("forwarded: ", forwarded);
+
   if (forwarded && typeof forwarded === "string") {
     ip = forwarded.split(",")[0];
   } else if (forwarded && typeof forwarded !== "string") {
