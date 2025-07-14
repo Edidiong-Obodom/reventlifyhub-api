@@ -2,33 +2,23 @@ import { Request } from "express";
 import clientPromise from "../../../../mongoDB";
 import { AuditLogs } from "./auditLogs";
 import { ExtendedRequest } from "../../../authenticateToken/authenticateToken.dto";
+import { getIp } from "../../../../helpers";
 // import IPinfoWrapper, { IPinfo } from "node-ipinfo";
 
 export const getClientIp = async (req: Request | ExtendedRequest) => {
-  const forwarded = req.headers["x-forwarded-for"];
-  // const ipInfoWrapper = new IPinfoWrapper(process.env.IPINFO_TOKEN);
-  let ip: string;
+  const { ip } = getIp(req);
 
-  console.log("forwarded: ", forwarded);
-
-  if (forwarded && typeof forwarded === "string") {
-    ip = forwarded.split(",")[0];
-  } else if (forwarded && typeof forwarded !== "string") {
-    ip = forwarded[0].split(",")[0];
-  } else {
-    ip = req.ip;
-  }
   return {
-    ip: ip,
-    ipLookUp: {},
+    ip,
+    ipLookUp: {}, // optional placeholder
   };
 
-  // return ipInfoWrapper.lookupIp(ip).then((response: IPinfo) => {
-  //   return {
-  //     ip: ip,
-  //     ipLookUp: response,
-  //   };
-  // });
+  // Optional future lookup
+  // const ipInfoWrapper = new IPinfoWrapper(process.env.IPINFO_TOKEN);
+  // return ipInfoWrapper.lookupIp(ip).then((response: IPinfo) => ({
+  //   ip,
+  //   ipLookUp: response,
+  // }));
 };
 
 export const auditLogs = async ({

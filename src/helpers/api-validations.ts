@@ -1,4 +1,6 @@
+import { Request } from "express";
 import * as Helpers from "../helpers/index";
+import { ExtendedRequest } from "../utilities/authenticateToken/authenticateToken.dto";
 
 /**
  * Validates the presence and format of required fields in the provided body object.
@@ -78,5 +80,59 @@ export const noExtraFields = (
     message: `No additional property in the request ${
       !rest.notBody ? "body" : rest.notBody.toLowerCase()
     } detected.`,
+  };
+};
+
+interface GetClientIpResult {
+  ip: string;
+  source: "forwarded-for" | "real-ip" | "request-ip" | "internal-header";
+  trusted: boolean;
+}
+
+export const getIp = (req: Request | ExtendedRequest): GetClientIpResult => {
+  const trustedInternalHeader =
+    req.headers["x-internal-auth"] === process.env.INTERNAL_SHARED_SECRET;
+
+  const internalRealIp = req.headers["x-real-client-ip"] as string | undefined;
+
+  if (trustedInternalHeader && internalRealIp) {
+    return {
+      ip: internalRealIp,
+      source: "internal-header",
+      trusted: true,
+    };
+  }
+
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string") {
+    const ip = forwarded.split(",").pop().trim();
+    return {
+      ip,
+      source: "forwarded-for",
+      trusted: true,
+    };
+  }
+
+  if (Array.isArray(forwarded)) {
+    const ip = forwarded[forwarded.length - 1].trim();
+    return {
+      ip,
+      source: "forwarded-for",
+      trusted: true,
+    };
+  }
+
+  if (req.ip) {
+    return {
+      ip: req.ip,
+      source: "request-ip",
+      trusted: false,
+    };
+  }
+
+  return {
+    ip: "unknown",
+    source: "request-ip",
+    trusted: false,
   };
 };

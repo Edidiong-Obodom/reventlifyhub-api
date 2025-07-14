@@ -20,14 +20,14 @@ let whitelist;
 if (process.env.NODE_ENV !== "production") {
   whitelist = "*";
 } else {
-  app.set("trust proxy", true); // Trust the first proxy in production
+  app.set("trust proxy", 1); // Trust the first proxy in production
   whitelist = [
     "https://admin.socket.io",
     process.env.URL,
     "https://api.paystack.co",
     "https://paystack.com",
     "https://reventlify-web.vercel.app",
-    "https://www.reventlify.com"
+    "https://www.reventlify.com",
   ];
 }
 
