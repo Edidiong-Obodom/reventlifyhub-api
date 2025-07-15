@@ -1,9 +1,8 @@
-import { Response } from "express";
-import { ExtendedRequest } from "../../../../../../utilities/authenticateToken/authenticateToken.dto";
+import { Request, Response } from "express";
 import axios from "axios";
 import { pool } from "../../../../../../db";
 
-const fetchImage = async (req: ExtendedRequest, res: Response) => {
+const fetchImage = async (req: Request, res: Response) => {
   const { user } = req;
 
   if (!user) {

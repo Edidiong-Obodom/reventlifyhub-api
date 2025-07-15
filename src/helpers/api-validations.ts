@@ -1,6 +1,5 @@
 import { Request } from "express";
 import * as Helpers from "../helpers/index";
-import { ExtendedRequest } from "../utilities/authenticateToken/authenticateToken.dto";
 
 /**
  * Validates the presence and format of required fields in the provided body object.
@@ -89,7 +88,7 @@ interface GetClientIpResult {
   trusted: boolean;
 }
 
-export const getIp = (req: Request | ExtendedRequest): GetClientIpResult => {
+export const getIp = (req: Request | Request): GetClientIpResult => {
   const trustedInternalHeader =
     req.headers["x-internal-auth"] === process.env.INTERNAL_SHARED_SECRET;
 

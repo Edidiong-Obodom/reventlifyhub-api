@@ -36,32 +36,20 @@ const sendVerificationCode = async (req: Request, res: Response) => {
   const extraFields = Helpers.noExtraFields(rest);
 
   if (!extraFields.success) {
-    await Log.auditLogs({
+    req.auditData = {
       user: email,
       action: "Signup Send Code",
       details: extraFields.message,
-      endPoint: "v1/auth/signup/send-code",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+    };
     return res.status(400).json({ message: extraFields.message });
   }
   // Check if password length lesser than 8 characters
   if (password.length < 8) {
-    await Log.auditLogs({
+    req.auditData = {
       user: email,
       action: "Signup Send Code",
       details: "Password must have a minimum of 8 characters.",
-      endPoint: "v1/auth/signup/send-code",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+    };
     return res
       .status(400)
       .json({ message: "Password must have a minimum of 8 characters." });
@@ -81,17 +69,11 @@ const sendVerificationCode = async (req: Request, res: Response) => {
 
     // action if user already exists
     if (user.rows.length !== 0) {
-      await Log.auditLogs({
+      req.auditData = {
         user: email,
         action: "Signup Send Code",
         details: "User already exist!",
-        endPoint: "v1/auth/signup/send-code",
-        date: currentDate,
-        metaData: {
-          ipAddress: ip,
-          location: ipLookUp,
-        },
-      });
+      };
       return res.status(409).json({ message: "User already exist!" });
     }
 
@@ -107,17 +89,11 @@ const sendVerificationCode = async (req: Request, res: Response) => {
 
     // action if username already exists
     if (user_name.rows.length !== 0 || user_name_limbo.rows.length !== 0) {
-      await Log.auditLogs({
+      req.auditData = {
         user: email,
         action: "Signup Send Code",
         details: "User name already taken!",
-        endPoint: "v1/auth/signup/send-code",
-        date: currentDate,
-        metaData: {
-          ipAddress: ip,
-          location: ipLookUp,
-        },
-      });
+      };
       return res.status(409).json({ message: "Username already taken!" });
     }
 
@@ -162,35 +138,21 @@ const sendVerificationCode = async (req: Request, res: Response) => {
       }),
     });
 
-    await Log.auditLogs({
+    req.auditData = {
       user: email,
       action: "Signup Send Code",
       details: "success",
-      endPoint: "v1/auth/signup/send-code",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+    };
     return res.status(200).json({
       Status: "Sent Successfully!",
       toEmail: email,
     });
   } catch (error) {
-    console.log("sendVerificationCode: ", error);
-
-    await Log.auditLogs({
+    req.auditData = {
       user: email,
       action: "Signup Send Code",
-      details: error.message,
-      endPoint: "v1/auth/signup/send-code",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+      details: error?.message ?? error?.toString(),
+    };
     return res.status(500).json("Oops something went wrong.");
   }
 };
@@ -216,17 +178,11 @@ const register = async (req: Request, res: Response) => {
 
   // Validate email format
   if (!Helpers.emailRegex.test(req.body.email)) {
-    await Log.auditLogs({
+    req.auditData = {
       user: email,
       action: "Signup Register",
       details: "Invalid email format.",
-      endPoint: "v1/auth/signup/register",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+    };
     return res.status(400).json({ message: "Invalid email format." });
   }
 
@@ -234,17 +190,11 @@ const register = async (req: Request, res: Response) => {
   const extraFields = Helpers.noExtraFields(rest);
 
   if (!extraFields.success) {
-    await Log.auditLogs({
+    req.auditData = {
       user: email,
       action: "Signup Register",
       details: extraFields.message,
-      endPoint: "v1/auth/signup/register",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+    };
     return res.status(400).json({ message: extraFields.message });
   }
 
@@ -255,17 +205,11 @@ const register = async (req: Request, res: Response) => {
     ]);
 
     if (user.rows.length !== 0) {
-      await Log.auditLogs({
+      req.auditData = {
         user: email,
         action: "Signup Register",
         details: "User already exists!",
-        endPoint: "v1/auth/signup/register",
-        date: currentDate,
-        metaData: {
-          ipAddress: ip,
-          location: ipLookUp,
-        },
-      });
+      };
       return res.status(409).json({ message: "User already exists!" });
     }
 
@@ -276,17 +220,11 @@ const register = async (req: Request, res: Response) => {
 
     // checks if code was sent to the email
     if (code.rows.length === 0) {
-      await Log.auditLogs({
+      req.auditData = {
         user: email,
         action: "Signup Register",
         details: "No code was sent to this email.",
-        endPoint: "v1/auth/signup/register",
-        date: currentDate,
-        metaData: {
-          ipAddress: ip,
-          location: ipLookUp,
-        },
-      });
+      };
       return res
         .status(400)
         .json({ message: "No code was sent to this email." });
@@ -294,17 +232,11 @@ const register = async (req: Request, res: Response) => {
 
     // checks if the code entered is valid
     if (code.rows[0].code !== feCode) {
-      await Log.auditLogs({
+      req.auditData = {
         user: email,
         action: "Signup Register",
         details: "Incorrect Code.",
-        endPoint: "v1/auth/signup/register",
-        date: currentDate,
-        metaData: {
-          ipAddress: ip,
-          location: ipLookUp,
-        },
-      });
+      };
       return res.status(400).json({ message: "Incorrect Code." });
     }
 
@@ -343,17 +275,12 @@ const register = async (req: Request, res: Response) => {
         body: msg.html,
       }),
     });
-    await Log.auditLogs({
+
+    req.auditData = {
       user: email,
       action: "Signup Register",
       details: "success",
-      endPoint: "v1/auth/signup/register",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+    };
 
     // return
     return res.status(200).json({
@@ -361,17 +288,11 @@ const register = async (req: Request, res: Response) => {
       user_created: newUser.rows[0].email,
     });
   } catch (error) {
-    await Log.auditLogs({
+    req.auditData = {
       user: email,
       action: "Signup Register",
-      details: error.message,
-      endPoint: "v1/auth/signup/register",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+      details: error?.message ?? error.toString(),
+    };
     return res.status(500).json({ message: "Oops something went wrong..." });
   }
 };

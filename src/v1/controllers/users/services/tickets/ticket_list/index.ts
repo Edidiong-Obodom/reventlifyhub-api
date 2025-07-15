@@ -1,8 +1,7 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { pool } from "../../../../../../db";
-import { ExtendedRequest } from "../../../../../../utilities/authenticateToken/authenticateToken.dto";
 
-export const ticketList = async (req: ExtendedRequest, res: Response) => {
+export const ticketList = async (req: Request, res: Response) => {
   try {
     const userId = req.user;
     const {

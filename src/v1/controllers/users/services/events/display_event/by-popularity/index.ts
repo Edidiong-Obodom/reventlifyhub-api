@@ -1,8 +1,7 @@
-import { Response } from "express";
-import { ExtendedRequest } from "../../../../../../../utilities/authenticateToken/authenticateToken.dto";
+import { Request, Response } from "express";
 import { pool } from "../../../../../../../db";
 
-export const byPopularity = async (req: ExtendedRequest, res: Response) => {
+export const byPopularity = async (req: Request, res: Response) => {
   try {
     const {
       country,

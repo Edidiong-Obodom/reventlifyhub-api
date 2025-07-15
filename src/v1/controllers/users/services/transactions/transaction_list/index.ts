@@ -1,6 +1,5 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { pool } from "../../../../../../db";
-import { ExtendedRequest } from "../../../../../../utilities/authenticateToken/authenticateToken.dto";
 
 /**
  * Fetches a paginated list of **client-visible transactions** for the authenticated user.
@@ -23,7 +22,7 @@ import { ExtendedRequest } from "../../../../../../utilities/authenticateToken/a
  *
  * Response: JSON with `data[]`, `page`, `limit`, and `total`
  */
-export const transactionList = async (req: ExtendedRequest, res: Response) => {
+export const transactionList = async (req: Request, res: Response) => {
   const userId = req.user;
   const { page = 1, limit = 10, startDate, endDate } = req.query as any;
 

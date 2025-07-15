@@ -1,6 +1,5 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { pool } from "../../../../../../db";
-import { ExtendedRequest } from "../../../../../../utilities/authenticateToken/authenticateToken.dto";
 
 /**
  * Allows user to **search their transaction history** with filters and pagination.
@@ -27,10 +26,7 @@ import { ExtendedRequest } from "../../../../../../utilities/authenticateToken/a
  *
  * Response: JSON with `data[]`, `page`, `limit`, and `total`
  */
-export const transactionSearch = async (
-  req: ExtendedRequest,
-  res: Response
-) => {
+export const transactionSearch = async (req: Request, res: Response) => {
   const userId = req.user;
   const {
     searchTerm,

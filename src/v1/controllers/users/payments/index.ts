@@ -69,18 +69,11 @@ export const paystackWebhook = async (req: Request, res: Response) => {
         );
       }
     } else {
-      await Log.auditLogs({
-        user: ip,
+      req.auditData = {
         action: "Ticket Purchase Paystack",
         details:
           "Get a life, stealing is not good. Go and learn a decent skill or trade or something... 😒👎",
-        endPoint: "v1/user/ticket/purchase/paystack-webhook",
-        date: currentDate,
-        metaData: {
-          ipAddress: ip,
-          location: ipLookUp,
-        },
-      });
+      };
       return res.status(400).json({
         message:
           "Get a life, stealing is not good. Go and learn a decent skill or trade or something... 😒👎",

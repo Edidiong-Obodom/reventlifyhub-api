@@ -179,3 +179,7 @@ export function deSlugify(slug: string) {
     .replace(/-/g, " ") // Replace hyphens with spaces
     .replace(/\b\w/g, (char) => char.toUpperCase()); // Capitalize each word
 }
+
+export const formatDuration = (ms: number): string => {
+  return `${(ms / 1000).toFixed(2)}s`;
+};

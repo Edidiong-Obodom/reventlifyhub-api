@@ -9,6 +9,7 @@ import {
 } from "../controllers/auth/authController";
 import { loginRateLimiter } from "../../utilities/rate-limit";
 import { allRateLimiter } from "../../utilities/rate-limit/all-rate-limit";
+import { auditMiddleware } from "../../utilities/auditMiddleware";
 
 const router = Router();
 
@@ -19,7 +20,7 @@ router.post("/signup/send-code", allRateLimiter, sendVerificationCode);
 router.post("/signup/register", allRateLimiter, register);
 
 // login user
-router.post("/login", loginRateLimiter, login);
+router.post("/login", loginRateLimiter, auditMiddleware(), login);
 
 // sends verification code for password reset
 router.post("/pw-reset-code", allRateLimiter, sendPWResetCode);

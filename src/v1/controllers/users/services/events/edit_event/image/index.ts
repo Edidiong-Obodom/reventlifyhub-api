@@ -1,11 +1,10 @@
-import { Response } from "express";
-import { ExtendedRequest } from "../../../../../../../utilities/authenticateToken/authenticateToken.dto";
+import { Request, Response } from "express";
 import * as Helpers from "../../../../../../../helpers/index";
 import Log from "../../../../../../../utilities/logger";
 import cloudinary from "../../../../../../../utilities/cloudinary";
 import { pool } from "../../../../../../../db";
 
-export const regimeImageEdit = async (req: ExtendedRequest, res: Response) => {
+export const regimeImageEdit = async (req: Request, res: Response) => {
   const { user } = req;
   const data = JSON.stringify(req.body);
   const requiredHeaders = Helpers.requiredFields(req.body, [
@@ -13,19 +12,13 @@ export const regimeImageEdit = async (req: ExtendedRequest, res: Response) => {
     "image",
   ]);
   if (!requiredHeaders.success) {
-    return await Log.eventEditLogs(
-      { req, res, endPoint: "v1/user/regime/edit/image" },
-      {
-        actorId: user,
-        actor: req.email,
-        action: "Regime Edit: Image",
-        eventId: "",
-        eventName: null,
-        data,
-        status: "Failed",
-        details: requiredHeaders.message,
-      }
-    );
+    req.auditData = {
+      action: "Regime Edit: Image",
+      details: requiredHeaders.message,
+    };
+    return res.status(400).json({
+      message: requiredHeaders.message,
+    });
   }
   const { regimeId, image } = req.body;
 
@@ -34,52 +27,34 @@ export const regimeImageEdit = async (req: ExtendedRequest, res: Response) => {
     const regimeDetails = await Helpers.getData("regimes", "id", regimeId);
 
     if (regimeDetails.rowCount === 0) {
-      return await Log.eventEditLogs(
-        { req, res, endPoint: "v1/user/regime/edit/image" },
-        {
-          actorId: user,
-          actor: req.email,
-          action: "Regime Edit: Image",
-          eventId: "",
-          eventName: null,
-          data,
-          status: "Failed",
-          details: "Regime does not exist",
-        }
-      );
+      req.auditData = {
+        action: "Regime Edit: Image",
+        details: "Regime does not exist",
+      };
+      return res.status(404).json({
+        message: "Regime does not exist",
+      });
     }
 
     if (regimeDetails.rows[0].creator_id !== user) {
-      return await Log.eventEditLogs(
-        { req, res, endPoint: "v1/user/regime/edit/image", logStatusCode: 403 },
-        {
-          actorId: user,
-          actor: req.email,
-          action: "Regime Edit: Image",
-          eventId: regimeId,
-          eventName: regimeDetails.rows[0].name,
-          data,
-          status: "Failed",
-          details: "You are not authorized to edit this regime",
-        }
-      );
+      req.auditData = {
+        action: "Regime Edit: Image",
+        details: "You are not authorized to edit this regime",
+      };
+      return res.status(403).json({
+        message: "You are not authorized to edit this regime",
+      });
     }
 
     const details = Helpers.sizeChecker(image);
     if (details.MB > 10) {
-      return await Log.eventEditLogs(
-        { req, res, endPoint: "v1/user/regime/edit/image" },
-        {
-          actorId: user,
-          actor: req.email,
-          action: "Regime Edit: Image",
-          eventId: regimeId,
-          eventName: regimeDetails.rows[0].name,
-          data,
-          status: "Failed",
-          details: "Media larger than 10MB",
-        }
-      );
+      req.auditData = {
+        action: "Regime Edit: Image",
+        details: "Media larger than 10MB",
+      };
+      return res.status(400).json({
+        message: "Media larger than 10MB",
+      });
     }
 
     const resultOfUpdate = await cloudinary.uploader.upload(image, {
@@ -93,19 +68,13 @@ export const regimeImageEdit = async (req: ExtendedRequest, res: Response) => {
 
     if (updateImage.rowCount === 1) {
       await pool.query("COMMIT");
-      return await Log.eventEditLogs(
-        { req, res, endPoint: "v1/user/regime/edit/image" },
-        {
-          actorId: user,
-          actor: req.email,
-          action: "Regime Edit: Image",
-          eventId: regimeId,
-          eventName: regimeDetails.rows[0].name,
-          data,
-          status: "Success",
-          details: "1 record updated successfully",
-        }
-      );
+      req.auditData = {
+        action: "Regime Edit: Image",
+        details: "1 record updated successfully",
+      };
+      return res.status(200).json({
+        message: "1 record updated successfully",
+      });
     } else {
       await pool.query("ROLLBACK");
       return res.status(200).json({
@@ -114,19 +83,12 @@ export const regimeImageEdit = async (req: ExtendedRequest, res: Response) => {
     }
   } catch (error) {
     await pool.query("ROLLBACK");
-    return await Log.eventEditLogs(
-      { req, res, endPoint: "v1/user/regime/edit/image", logStatusCode: 500 },
-      {
-        actorId: user,
-        actor: req.email,
-        action: "Regime Edit: Image",
-        eventId: "",
-        eventName: null,
-        data,
-        status: "Failed",
-        details: "Oops something went wrong...",
-        error: error?.message ?? JSON.stringify(error),
-      }
-    );
+    req.auditData = {
+      action: "Regime Edit: Image",
+      details: error?.message ?? error.toString(),
+    };
+    return res.status(200).json({
+      message: "Oops something went wrong...",
+    });
   }
 };

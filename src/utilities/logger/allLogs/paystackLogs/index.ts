@@ -56,8 +56,8 @@ export const paystackEditLogs = async (
       endPoint: "v1/user/ticket/purchase/paystack-webhook",
       date,
       metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
+        
+        
       },
     });
     res.send(logStatusCode);

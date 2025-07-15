@@ -1,10 +1,16 @@
-import { MetaData } from "../allLogs";
+import { Request } from "express";
+import { IPInfo } from ".";
 
 export interface AuditLogs {
+  req?: Request;
   user: string;
   action: string;
   details?: string;
   endPoint: string;
   date?: Date;
-  metaData: MetaData;
+  metaData?: Partial<IPInfo>;
+  statusCode?: number;
+  method?: string;
+  duration?: string;
+  userAgent?: string;
 }

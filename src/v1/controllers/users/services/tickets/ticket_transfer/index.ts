@@ -1,11 +1,10 @@
-import { Response } from "express";
-import { ExtendedRequest } from "../../../../../../utilities/authenticateToken/authenticateToken.dto";
+import { Request, Response } from "express";
 import * as Helpers from "../../../../../../helpers";
 import { pool } from "../../../../../../db";
 import { capitalize } from "lodash";
 import Log from "../../../../../../utilities/logger";
 
-export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
+export const ticketTransfer = async (req: Request, res: Response) => {
   const { user, userName, email } = req;
   const fields = ["beneficiary", "ticket"];
   const currentDate = new Date();
@@ -29,18 +28,13 @@ export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
 
   if (user === beneficiary) {
     // insert ticket edit into logs
-    return await Log.ticketEditLogs(
-      { req, res },
-      {
-        sender: email,
-        beneficiary,
-        ticket,
-        status: "failed",
-        errorMessage: "You can't share a ticket to yourself.",
-        date: currentDate,
-        name: "Ticket transfer",
-      }
-    );
+    req.auditData = {
+      action: "Ticket transfer",
+      details: "You can't share a ticket to yourself.",
+    };
+    return res
+      .status(400)
+      .json({ message: "You can't share a ticket to yourself." });
   }
 
   const queryString = `SELECT 
@@ -63,34 +57,20 @@ export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
 
     if (beneficiaryDetails.rows.length === 0) {
       // insert ticket edit into logs
-      return await Log.ticketEditLogs(
-        { req, res },
-        {
-          sender: email,
-          beneficiary,
-          ticket,
-          status: "failed",
-          errorMessage: "User does not exist.",
-          date: currentDate,
-          name: "Ticket transfer",
-        }
-      );
+      req.auditData = {
+        action: "Ticket transfer",
+        details: "User does not exist.",
+      };
+      return res.status(400).json({ message: "User does not exist." });
     }
 
     if (ticketDetails.rows.length === 0) {
       // insert ticket edit into logs
-      return await Log.ticketEditLogs(
-        { req, res },
-        {
-          sender: email,
-          beneficiary,
-          ticket,
-          status: "failed",
-          errorMessage: "Ticket does not exist.",
-          date: currentDate,
-          name: "Ticket transfer",
-        }
-      );
+      req.auditData = {
+        action: "Ticket transfer",
+        details: "Ticket does not exist.",
+      };
+      return res.status(400).json({ message: "Ticket does not exist." });
     }
     const regimeStart = new Date(
       ticketDetails.rows[0].start_date + " " + ticketDetails.rows[0].start_time
@@ -98,18 +78,13 @@ export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
 
     if (currentDate > regimeStart) {
       // insert ticket edit into logs
-      return await Log.ticketEditLogs(
-        { req, res },
-        {
-          sender: email,
-          beneficiary,
-          ticket,
-          status: "failed",
-          errorMessage: "You can't share a ticket after the event has started.",
-          date: currentDate,
-          name: "Ticket transfer",
-        }
-      );
+      req.auditData = {
+        action: "Ticket transfer",
+        details: "You can't share a ticket after the event has started.",
+      };
+      return res.status(400).json({
+        message: "You can't share a ticket after the event has started.",
+      });
     }
 
     await pool.query(
@@ -142,42 +117,25 @@ export const ticketTransfer = async (req: ExtendedRequest, res: Response) => {
     });
 
     // insert ticket edit into logs
-    return await Log.ticketEditLogs(
-      {
-        req,
-        res,
-        logResponse: {
-          message: `Ticket transfer successful, ${capitalize(
-            beneficiaryDetails.rows[0].user_name
-          )} now owns this ticket`,
-          data: {
-            ticket,
-            beneficiary,
-          },
-        },
-      },
-      {
-        sender: email,
-        beneficiary,
-        ticket,
-        status: "success",
-        date: currentDate,
-        name: "Ticket transfer",
-      }
-    );
+    req.auditData = {
+      action: "Ticket transfer",
+      details: `Ticket transfer successful, ${capitalize(
+        beneficiaryDetails.rows[0].user_name
+      )} now owns this ticket`,
+    };
+    return res.status(200).json({
+      message: `Ticket transfer successful, ${capitalize(
+        beneficiaryDetails.rows[0].user_name
+      )} now owns this ticket`,
+    });
   } catch (error) {
     // insert ticket edit into logs
-    return await Log.ticketEditLogs(
-      { req, res, logStatusCode: 500 },
-      {
-        sender: email,
-        beneficiary,
-        ticket,
-        status: "failed",
-        errorMessage: error.message,
-        date: currentDate,
-        name: "Ticket transfer",
-      }
-    );
+    req.auditData = {
+      action: "Ticket transfer",
+      details: error?.message ?? error?.toString(),
+    };
+    return res.status(500).json({
+      message: "Oops something went wrong...",
+    });
   }
 };

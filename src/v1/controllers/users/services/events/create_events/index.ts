@@ -1,6 +1,5 @@
-import { Response } from "express";
+import { Response, Request } from "express";
 import { pool } from "../../../../../../db";
-import { ExtendedRequest } from "../../../../../../utilities/authenticateToken/authenticateToken.dto";
 import * as Helpers from "../../../../../../helpers";
 import * as bcrypt from "bcrypt";
 import cloudinary from "../../../../../../utilities/cloudinary";
@@ -11,7 +10,7 @@ import Log from "../../../../../../utilities/logger";
 import { spreader } from "spreader-utils";
 
 // Check for regime name availability
-export const nameAvailability = async (req: ExtendedRequest, res: Response) => {
+export const nameAvailability = async (req: Request, res: Response) => {
   const field = ["regimeName"];
   const currentDate = new Date();
   const { ip, ipLookUp } = await getClientIp(req);
@@ -32,17 +31,10 @@ export const nameAvailability = async (req: ExtendedRequest, res: Response) => {
   const extraFields = Helpers.noExtraFields(rest, "Query param");
 
   if (!extraFields.success) {
-    await Log.auditLogs({
-      user: req.email,
+    req.auditData = {
       action: "Regime Name Availability",
       details: extraFields.message,
-      endPoint: "v1/user/regime/name/availability",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+    };
     return res.status(400).json({ message: extraFields.message });
   }
 
@@ -78,80 +70,46 @@ export const nameAvailability = async (req: ExtendedRequest, res: Response) => {
       );
 
       if (nameCheck1.rows.length === 0) {
-        await Log.auditLogs({
-          user: req.email,
+        req.auditData = {
           action: "Regime Name Availability",
           details: "Regime name already in use by another creator",
-          endPoint: "v1/user/regime/name/availability",
-          date: currentDate,
-          metaData: {
-            ipAddress: ip,
-            location: ipLookUp,
-          },
-        });
+        };
         return res
           .status(409)
           .json({ message: "Regime name already in use by another creator" });
       } else if (nameCheck1.rows.length > 0 && currentDate < endDate) {
-        await Log.auditLogs({
-          user: req.email,
+        req.auditData = {
           action: "Regime Name Availability",
           details: `Your regime ${nameCheck1.rows[0].name} is still ongoing, you can't create another with the same name until the current regime ends. `,
-          endPoint: "v1/user/regime/name/availability",
-          date: currentDate,
-          metaData: {
-            ipAddress: ip,
-            location: ipLookUp,
-          },
-        });
+        };
         return res.status(409).json({
           message: `Your regime ${nameCheck1.rows[0].name} is still ongoing, you can't create another with the same name until the current regime ends. `,
         });
       } else {
-        await Log.auditLogs({
-          user: req.email,
+        req.auditData = {
           action: "Regime Name Availability",
           details: `success`,
-          endPoint: "v1/user/regime/name/availability",
-          date: currentDate,
-          metaData: {
-            ipAddress: ip,
-            location: ipLookUp,
-          },
-        });
+        };
         return res.status(200).json({ message: "Regime name is free for use" });
       }
     }
-    await Log.auditLogs({
-      user: req.email,
+
+    req.auditData = {
       action: "Regime Name Availability",
       details: "Regime name does not exist",
-      endPoint: "v1/user/regime/name/availability",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+    };
     return res.status(200).json({ message: "Regime name does not exist" });
   } catch (error) {
-    await Log.auditLogs({
-      user: req.email,
+    req.auditData = {
       action: "Regime Name Availability",
-      details: error.message,
-      endPoint: "v1/user/regime/name/availability",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+      details: error?.message ?? error?.toString(),
+    };
     return res.status(500).json({ message: "Oops something went wrong..." });
   }
 };
 
 // Create regime
-export const createRegime = async (req: ExtendedRequest, res: Response) => {
+export const createRegime = async (req: Request, res: Response) => {
   const userId = req.user;
   const email = req.email;
   const currentDate = new Date();
@@ -213,17 +171,10 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
 
   // Check if regimeType is valid
   if (!regimeTypeValid.status) {
-    await Log.auditLogs({
-      user: req.email,
+    req.auditData = {
       action: "Regime Create",
       details: regimeTypeValid.message,
-      endPoint: "v1/user/regime/create",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+    };
     return res.status(400).json({ message: regimeTypeValid.message });
   }
 
@@ -234,18 +185,11 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
     !Helpers.februaryCheck(regimeStartDate) ||
     !Helpers.februaryCheck(regimeEndDate)
   ) {
-    await Log.auditLogs({
-      user: req.email,
+    req.auditData = {
       action: "Regime Create",
       details:
         "Your endDate or startDate must match the YYYY-MM-DD format i.e 2023-05-19",
-      endPoint: "v1/user/regime/create",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+    };
     return res.status(400).json({
       message:
         "Your endDate or startDate must match the YYYY-MM-DD format i.e 2023-05-19",
@@ -255,18 +199,11 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
   const start = new Date(regimeStartDate);
   const end = new Date(regimeEndDate);
   if (currentDate > start || currentDate > end) {
-    await Log.auditLogs({
-      user: req.email,
+    req.auditData = {
       action: "Regime Create",
       details:
         "Your event startDate or endDate must not be a day or more behind the current date",
-      endPoint: "v1/user/regime/create",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+    };
     return res.status(400).json({
       message:
         "Your event startDate or endDate must not be a day or more behind the current date",
@@ -278,18 +215,11 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
     !Helpers.allowedTimeFormat.test(regimeStartTime) ||
     !Helpers.allowedTimeFormat.test(regimeEndTime)
   ) {
-    await Log.auditLogs({
-      user: req.email,
+    req.auditData = {
       action: "Regime Create",
       details:
         "Your endTime or startTime must match the HH:MM:SS 24hrs format i.e 23:04:00",
-      endPoint: "v1/user/regime/create",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+    };
     return res.status(400).json({
       message:
         "Your endTime or startTime must match the HH:MM:SS 24hrs format i.e 23:04:00",
@@ -311,17 +241,10 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
   const extraFields = Helpers.noExtraFields(rest);
 
   if (!extraFields.success) {
-    await Log.auditLogs({
-      user: req.email,
+    req.auditData = {
       action: "Regime Create",
       details: extraFields.message,
-      endPoint: "v1/user/regime/create",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+    };
     return res.status(400).json({ message: extraFields.message });
   }
 
@@ -336,39 +259,25 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
 
   // checks to see if all the regime's pricing matches the required format
   if (regimePricing.length > 10) {
-    await Log.auditLogs({
-      user: req.email,
+    req.auditData = {
       action: "Regime Create",
-      details: "You cannot have more than 10 pricings for one event.",
-      endPoint: "v1/user/regime/create",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+      details: "You cannot have more than 10 pricing for one event.",
+    };
     return res.status(400).json({
-      message: "You cannot have more than 10 pricings for one event.",
+      message: "You cannot have more than 10 pricing for one event.",
     });
   }
 
   // checks to see if all the regime's pricing matches the required format
   if (regimePricing.length === 0) {
-    await Log.auditLogs({
-      user: req.email,
+    req.auditData = {
       action: "Regime Create",
       details:
-        "You cannot have 0 pricings for an event, even if it's a free event make one pricing and make the pricing amount 0.",
-      endPoint: "v1/user/regime/create",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+        "You cannot have 0 pricing for an event, even if it's a free event make one pricing and make the pricing amount 0.",
+    };
     return res.status(400).json({
       message:
-        "You cannot have 0 pricings for an event, even if it's a free event make one pricing and make the pricing amount 0.",
+        "You cannot have 0 pricing for an event, even if it's a free event make one pricing and make the pricing amount 0.",
     });
   }
 
@@ -396,17 +305,10 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
   });
 
   if (pricingValidationResult.length > 0) {
-    await Log.auditLogs({
-      user: req.email,
+    req.auditData = {
       action: "Regime Create",
       details: pricingValidationResult[0],
-      endPoint: "v1/user/regime/create",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+    };
     return res.status(400).json({
       message: pricingValidationResult[0],
     });
@@ -421,17 +323,10 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
     );
 
     if (!nameCheckResult) {
-      await Log.auditLogs({
-        user: req.email,
+      req.auditData = {
         action: "Regime Create",
         details: "Regime name already in use.",
-        endPoint: "v1/user/regime/create",
-        date: currentDate,
-        metaData: {
-          ipAddress: ip,
-          location: ipLookUp,
-        },
-      });
+      };
       return res.status(409).json({ message: "Regime name already in use." });
     }
 
@@ -443,17 +338,10 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       Helpers.sizeChecker(regimeMediaBase64III).MB > 10 ||
       Helpers.sizeChecker(regimeMediaBase64IV).MB > 10
     ) {
-      await Log.auditLogs({
-        user: req.email,
+      req.auditData = {
         action: "Regime Create",
         details: "Media larger than 10MB",
-        endPoint: "v1/user/regime/create",
-        date: currentDate,
-        metaData: {
-          ipAddress: ip,
-          location: ipLookUp,
-        },
-      });
+      };
       return res.status(400).json("Media larger than 10MB");
     }
     // Use Promise.all for Concurrent Operations
@@ -622,31 +510,17 @@ export const createRegime = async (req: ExtendedRequest, res: Response) => {
       }),
     });
 
-    await Log.auditLogs({
-      user: req.email,
+    req.auditData = {
       action: "Regime Create",
       details: "success",
-      endPoint: "v1/user/regime/create",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+    };
     return res.status(200).json({ "Regime Creation": "Successful!" });
   } catch (error) {
     await pool.query("ROLLBACK");
-    await Log.auditLogs({
-      user: req.email,
+    req.auditData = {
       action: "Regime Create",
-      details: error.message,
-      endPoint: "v1/user/regime/create",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+      details: error?.message ?? error?.toString(),
+    };
     return res.status(500).json(error.message);
   }
 };

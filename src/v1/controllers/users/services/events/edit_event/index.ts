@@ -1,5 +1,4 @@
-import { Response } from "express";
-import { ExtendedRequest } from "../../../../../../utilities/authenticateToken/authenticateToken.dto";
+import { Request, Response } from "express";
 import { pool } from "../../../../../../db";
 import * as Helpers from "../../../../../../helpers/index";
 import { CreateRegimeType } from "../create_events/create_events_types";
@@ -9,7 +8,7 @@ import Log from "../../../../../../utilities/logger";
 export * from "./image";
 
 // Edit Regime
-export const editRegime = async (req: ExtendedRequest, res: Response) => {
+export const editRegime = async (req: Request, res: Response) => {
   const { user } = req;
   const currentDate = new Date();
 
@@ -46,19 +45,11 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
   });
 
   if (!validation.success) {
-    return await Log.eventEditLogs(
-      { req, res, endPoint: "v1/user/regime/edit" },
-      {
-        actorId: user,
-        actor: req.email,
-        action: "Regime Edit",
-        eventId: regime_id,
-        eventName: null,
-        data,
-        status: "Failed",
-        details: validation.message,
-      }
-    );
+    req.auditData = {
+      action: "Regime Edit",
+      details: validation.message,
+    };
+    return res.status(400).json({ message: validation.message });
   }
 
   try {
@@ -71,19 +62,11 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
     );
 
     if (regimeResult.rowCount === 0) {
-      return await Log.eventEditLogs(
-        { req, res, endPoint: "v1/user/regime/edit", logStatusCode: 404 },
-        {
-          actorId: user,
-          actor: req.email,
-          action: "Regime Edit",
-          eventId: regime_id,
-          eventName: regimeResult.rows[0].name,
-          data,
-          status: "Failed",
-          details: "Regime not found.",
-        }
-      );
+      req.auditData = {
+        action: "Regime Edit",
+        details: "Regime not found.",
+      };
+      return res.status(404).json({ message: "Regime not found." });
     }
 
     // Build dynamic query for updates
@@ -136,19 +119,11 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
 
       // Check if regimeType is valid
       if (!regimeTypeValid.status) {
-        return await Log.eventEditLogs(
-          { req, res, endPoint: "v1/user/regime/edit" },
-          {
-            actorId: user,
-            actor: req.email,
-            action: "Regime Edit",
-            eventId: regime_id,
-            eventName: regimeResult.rows[0].name,
-            data,
-            status: "Failed",
-            details: regimeTypeValid.message,
-          }
-        );
+        req.auditData = {
+          action: "Regime Edit",
+          details: regimeTypeValid.message,
+        };
+        return res.status(400).json({ message: regimeTypeValid.message });
       }
 
       fieldsToUpdate.push("type = $" + (values.length + 1));
@@ -163,39 +138,29 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
         !Helpers.februaryCheck(regimeStartDate) ||
         !Helpers.februaryCheck(regimeEndDate)
       ) {
-        return await Log.eventEditLogs(
-          { req, res, endPoint: "v1/user/regime/edit" },
-          {
-            actorId: user,
-            actor: req.email,
-            action: "Regime Edit",
-            eventId: regime_id,
-            eventName: regimeResult.rows[0].name,
-            data,
-            status: "Failed",
-            details:
-              "Your endDate or startDate must match the YYYY-MM-DD format i.e 2023-05-19",
-          }
-        );
+        req.auditData = {
+          action: "Regime Edit",
+          details:
+            "Your endDate or startDate must match the YYYY-MM-DD format i.e 2023-05-19",
+        };
+        return res.status(400).json({
+          message:
+            "Your endDate or startDate must match the YYYY-MM-DD format i.e 2023-05-19",
+        });
       }
 
       const start = new Date(regimeStartDate);
       const end = new Date(regimeEndDate);
       if (currentDate > start || currentDate > end) {
-        return await Log.eventEditLogs(
-          { req, res, endPoint: "v1/user/regime/edit" },
-          {
-            actorId: user,
-            actor: req.email,
-            action: "Regime Edit",
-            eventId: regime_id,
-            eventName: regimeResult.rows[0].name,
-            data,
-            status: "Failed",
-            details:
-              "Your event startDate or endDate must not be a day or more behind the current date",
-          }
-        );
+        req.auditData = {
+          action: "Regime Edit",
+          details:
+            "Your event startDate or endDate must not be a day or more behind the current date",
+        };
+        return res.status(400).json({
+          message:
+            "Your event startDate or endDate must not be a day or more behind the current date",
+        });
       }
 
       // Time validation section
@@ -203,20 +168,15 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
         !Helpers.allowedTimeFormat.test(regimeStartTime) ||
         !Helpers.allowedTimeFormat.test(regimeEndTime)
       ) {
-        return await Log.eventEditLogs(
-          { req, res, endPoint: "v1/user/regime/edit" },
-          {
-            actorId: user,
-            actor: req.email,
-            action: "Regime Edit",
-            eventId: regime_id,
-            eventName: regimeResult.rows[0].name,
-            data,
-            status: "Failed",
-            details:
-              "Your endTime or startTime must match the HH:MM:SS 24hrs format i.e 23:04:00",
-          }
-        );
+        req.auditData = {
+          action: "Regime Edit",
+          details:
+            "Your endTime or startTime must match the HH:MM:SS 24hrs format i.e 23:04:00",
+        };
+        return res.status(400).json({
+          message:
+            "Your endTime or startTime must match the HH:MM:SS 24hrs format i.e 23:04:00",
+        });
       }
 
       // Date and Time final validation section
@@ -224,20 +184,15 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
       const finalEnd = new Date(regimeEndDate + " " + regimeEndTime);
 
       if (finalStart > finalEnd) {
-        return await Log.eventEditLogs(
-          { req, res, endPoint: "v1/user/regime/edit" },
-          {
-            actorId: user,
-            actor: req.email,
-            action: "Regime Edit",
-            eventId: regime_id,
-            eventName: regimeResult.rows[0].name,
-            data,
-            status: "Failed",
-            details:
-              "Your startTime and startDate cannot be greater than your endDate and endTime.",
-          }
-        );
+        req.auditData = {
+          action: "Regime Edit",
+          details:
+            "Your startTime and startDate cannot be greater than your endDate and endTime.",
+        };
+        return res.status(400).json({
+          message:
+            "Your startTime and startDate cannot be greater than your endDate and endTime.",
+        });
       }
 
       fieldsToUpdate.push("start_date = $" + (values.length + 1));
@@ -271,20 +226,15 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
         (!Helpers.allowedDateFormat.test(regimeStartDate) ||
           !Helpers.februaryCheck(regimeStartDate))
       ) {
-        return await Log.eventEditLogs(
-          { req, res, endPoint: "v1/user/regime/edit" },
-          {
-            actorId: user,
-            actor: req.email,
-            action: "Regime Edit",
-            eventId: regime_id,
-            eventName: regimeResult.rows[0].name,
-            data,
-            status: "Failed",
-            details:
-              "Your startDate must match the YYYY-MM-DD format i.e 2023-05-19",
-          }
-        );
+        req.auditData = {
+          action: "Regime Edit",
+          details:
+            "Your startDate must match the YYYY-MM-DD format i.e 2023-05-19",
+        };
+        return res.status(400).json({
+          message:
+            "Your startDate must match the YYYY-MM-DD format i.e 2023-05-19",
+        });
       } else if (regimeStartDate) {
         start_date.value = regimeStartDate;
         start_date.date = new Date(regimeStartDate);
@@ -294,20 +244,15 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
 
       // Handle startTime
       if (regimeStartTime && !Helpers.allowedTimeFormat.test(regimeStartTime)) {
-        return await Log.eventEditLogs(
-          { req, res, endPoint: "v1/user/regime/edit" },
-          {
-            actorId: user,
-            actor: req.email,
-            action: "Regime Edit",
-            eventId: regime_id,
-            eventName: regimeResult.rows[0].name,
-            data,
-            status: "Failed",
-            details:
-              "Your startTime must match the HH:MM:SS 24hrs format i.e 23:04:00",
-          }
-        );
+        req.auditData = {
+          action: "Regime Edit",
+          details:
+            "Your startTime must match the HH:MM:SS 24hrs format i.e 23:04:00",
+        };
+        return res.status(400).json({
+          message:
+            "Your startTime must match the HH:MM:SS 24hrs format i.e 23:04:00",
+        });
       } else if (regimeStartTime) {
         start_time = regimeStartTime;
         fieldsToUpdate.push("start_time = $" + (values.length + 1));
@@ -320,20 +265,15 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
         (!Helpers.allowedDateFormat.test(regimeEndDate) ||
           !Helpers.februaryCheck(regimeEndDate))
       ) {
-        return await Log.eventEditLogs(
-          { req, res, endPoint: "v1/user/regime/edit" },
-          {
-            actorId: user,
-            actor: req.email,
-            action: "Regime Edit",
-            eventId: regime_id,
-            eventName: regimeResult.rows[0].name,
-            data,
-            status: "Failed",
-            details:
-              "Your endDate must match the YYYY-MM-DD format i.e 2023-05-19",
-          }
-        );
+        req.auditData = {
+          action: "Regime Edit",
+          details:
+            "Your endDate must match the YYYY-MM-DD format i.e 2023-05-19",
+        };
+        return res.status(400).json({
+          message:
+            "Your endDate must match the YYYY-MM-DD format i.e 2023-05-19",
+        });
       } else if (regimeEndDate) {
         end_date.value = regimeEndDate;
         end_date.date = new Date(regimeEndDate);
@@ -343,20 +283,15 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
 
       // Handle endTime
       if (regimeEndTime && !Helpers.allowedTimeFormat.test(regimeEndTime)) {
-        return await Log.eventEditLogs(
-          { req, res, endPoint: "v1/user/regime/edit" },
-          {
-            actorId: user,
-            actor: req.email,
-            action: "Regime Edit",
-            eventId: regime_id,
-            eventName: regimeResult.rows[0].name,
-            data,
-            status: "Failed",
-            details:
-              "Your startTime must match the HH:MM:SS 24hrs format i.e 23:04:00",
-          }
-        );
+        req.auditData = {
+          action: "Regime Edit",
+          details:
+            "Your startTime must match the HH:MM:SS 24hrs format i.e 23:04:00",
+        };
+        return res.status(400).json({
+          message:
+            "Your startTime must match the HH:MM:SS 24hrs format i.e 23:04:00",
+        });
       } else if (regimeEndTime) {
         end_time = regimeEndTime;
         fieldsToUpdate.push("end_time = $" + (values.length + 1));
@@ -364,20 +299,15 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
       }
 
       if (currentDate > start_date.date || currentDate > end_date.date) {
-        return await Log.eventEditLogs(
-          { req, res, endPoint: "v1/user/regime/edit" },
-          {
-            actorId: user,
-            actor: req.email,
-            action: "Regime Edit",
-            eventId: regime_id,
-            eventName: regimeResult.rows[0].name,
-            data,
-            status: "Failed",
-            details:
-              "Your event startDate or endDate must not be a day or more behind the current date",
-          }
-        );
+        req.auditData = {
+          action: "Regime Edit",
+          details:
+            "Your event startDate or endDate must not be a day or more behind the current date",
+        };
+        return res.status(400).json({
+          message:
+            "Your event startDate or endDate must not be a day or more behind the current date",
+        });
       }
 
       // Date and Time final validation section
@@ -385,20 +315,15 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
       const finalEnd = new Date(end_date.value + " " + end_time);
 
       if (finalStart > finalEnd) {
-        return await Log.eventEditLogs(
-          { req, res, endPoint: "v1/user/regime/edit" },
-          {
-            actorId: user,
-            actor: req.email,
-            action: "Regime Edit",
-            eventId: regime_id,
-            eventName: regimeResult.rows[0].name,
-            data,
-            status: "Failed",
-            details:
-              "Your startTime and startDate cannot be greater than your endDate and endTime.",
-          }
-        );
+        req.auditData = {
+          action: "Regime Edit",
+          details:
+            "Your startTime and startDate cannot be greater than your endDate and endTime.",
+        };
+        return res.status(400).json({
+          message:
+            "Your startTime and startDate cannot be greater than your endDate and endTime.",
+        });
       }
     }
 
@@ -420,19 +345,13 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
       const updateResult = await pool.query(updateQuery, values);
 
       if (updateResult.rowCount === 0) {
-        return await Log.eventEditLogs(
-          { req, res, endPoint: "v1/user/regime/edit", logStatusCode: 500 },
-          {
-            actorId: user,
-            actor: req.email,
-            action: "Regime Edit",
-            eventId: regime_id,
-            eventName: regimeResult.rows[0].name,
-            data,
-            status: "Failed",
-            details: "Failed to update regime.",
-          }
-        );
+        req.auditData = {
+          action: "Regime Edit",
+          details: "Failed to update regime.",
+        };
+        return res.status(400).json({
+          message: "Failed to update regime.",
+        });
       }
 
       delete updateResult.rows[0].withdrawal_pin;
@@ -442,71 +361,35 @@ export const editRegime = async (req: ExtendedRequest, res: Response) => {
       delete updateResult.rows[0].affiliate;
       delete updateResult.rows[0].status;
 
-      return await Log.eventEditLogs(
-        {
-          req,
-          res,
-          endPoint: "v1/user/regime/edit",
-          logResponse: {
-            message: "Regime updated successfully.",
-            data: updateResult.rows[0],
-          },
-        },
-        {
-          actorId: user,
-          actor: req.email,
-          action: "Regime Edit",
-          eventId: regime_id,
-          eventName: regimeResult.rows[0].name,
-          data,
-          status: "Success",
-          details: "Regime updated successfully.",
-        }
-      );
+      req.auditData = {
+        action: "Regime Edit",
+        details: "Regime updated successfully.",
+      };
+      return res.status(200).json({
+        message: "Regime updated successfully.",
+      });
     } else {
-      return await Log.eventEditLogs(
-        {
-          req,
-          res,
-          endPoint: "v1/user/regime/edit",
-          logResponse: {
-            message: "You did not pass any value to update.",
-          },
-        },
-        {
-          actorId: user,
-          actor: req.email,
-          action: "Regime Edit",
-          eventId: regime_id,
-          eventName: regimeResult.rows[0].name,
-          data,
-          status: "Failed",
-          details: "Failed to update regime.",
-        }
-      );
+      req.auditData = {
+        action: "Regime Edit",
+        details: "You did not pass any value to update.",
+      };
+      return res.status(400).json({
+        message: "You did not pass any value to update.",
+      });
     }
   } catch (error) {
-    console.error("Error updating regime:", error);
-    return await Log.eventEditLogs(
-      { req, res, endPoint: "v1/user/regime/edit", logStatusCode: 500 },
-      {
-        actorId: user,
-        actor: req.email,
-        action: "Regime Edit",
-        eventId: regime_id,
-        eventName: null,
-        data,
-        status: "Failed",
-        details: error?.message ?? "Error updating regime",
-
-        error: JSON.stringify(error),
-      }
-    );
+    req.auditData = {
+      action: "Regime Edit",
+      details: error?.message ?? error?.toString() ?? "Error updating regime",
+    };
+    return res.status(500).json({
+      message: "Error updating regime",
+    });
   }
 };
 
 const validateEditRegimeRequest = (
-  req: ExtendedRequest
+  req: Request
 ): { success: boolean; message?: string } => {
   const requiredHeaders = Helpers.requiredFields(
     req.headers,

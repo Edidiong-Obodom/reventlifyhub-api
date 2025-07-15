@@ -1,12 +1,11 @@
-import { Response } from "express";
-import { ExtendedRequest } from "../../../../../../utilities/authenticateToken/authenticateToken.dto";
+import { Request, Response } from "express";
 import * as Helpers from "../../../../../../helpers";
 import { pool } from "../../../../../../db";
 import axios from "axios";
 import { getClientIp } from "../../../../../../utilities/logger/allLogs";
 import Log from "../../../../../../utilities/logger";
 
-export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
+export const ticketPurchase = async (req: Request, res: Response) => {
   const user = req.user;
   const userName = req.userName;
   const email = req.email;
@@ -28,32 +27,18 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
   const extraFields = Helpers.noExtraFields(rest);
 
   if (!extraFields.success) {
-    await Log.auditLogs({
-      user: email,
+    req.auditData = {
       action: "Ticket Purchase",
       details: extraFields.message,
-      endPoint: "v1/user/ticket/purchase",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+    };
     return res.status(400).json({ message: extraFields.message });
   }
 
   if (counter > 10) {
-    await Log.auditLogs({
-      user: email,
+    req.auditData = {
       action: "Ticket Purchase",
       details: "You can not purchase more than 10 tickets at a time.",
-      endPoint: "v1/user/ticket/purchase",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+    };
     return res.status(400).json({
       message: "You can not purchase more than 10 tickets at a time.",
     });
@@ -64,32 +49,18 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
     const regime = await Helpers.getData("regimes", "id", regimeId);
 
     if (regime.rows.length === 0) {
-      await Log.auditLogs({
-        user: email,
+      req.auditData = {
         action: "Ticket Purchase",
         details: "Regime does not exist.",
-        endPoint: "v1/user/ticket/purchase",
-        date: currentDate,
-        metaData: {
-          ipAddress: ip,
-          location: ipLookUp,
-        },
-      });
+      };
       return res.status(400).json({ message: "Regime does not exist." });
     }
 
     if (regime.rows[0].status !== "pending") {
-      await Log.auditLogs({
-        user: email,
+      req.auditData = {
         action: "Ticket Purchase",
         details: "Tickets are not being sold anymore.",
-        endPoint: "v1/user/ticket/purchase",
-        date: currentDate,
-        metaData: {
-          ipAddress: ip,
-          location: ipLookUp,
-        },
-      });
+      };
       return res
         .status(400)
         .json({ message: "Tickets are not being sold anymore." });
@@ -98,17 +69,10 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
     // Check if affiliate is a known user
     const affiliateDetails = await Helpers.getData("clients", "id", affiliate);
     if (affiliate && affiliateDetails.rowCount === 0) {
-      await Log.auditLogs({
-        user: email,
+      req.auditData = {
         action: "Ticket Purchase",
         details: "Affiliate does not exist.",
-        endPoint: "v1/user/ticket/purchase",
-        date: currentDate,
-        metaData: {
-          ipAddress: ip,
-          location: ipLookUp,
-        },
-      });
+      };
       return res.status(400).json({ message: "Affiliate does not exist." });
     }
 
@@ -116,17 +80,10 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
     const pricing = await Helpers.getData("pricings", "id", pricingId);
 
     if (pricing.rows.length === 0) {
-      await Log.auditLogs({
-        user: email,
+      req.auditData = {
         action: "Ticket Purchase",
         details: "Pricing does not exist.",
-        endPoint: "v1/user/ticket/purchase",
-        date: currentDate,
-        metaData: {
-          ipAddress: ip,
-          location: ipLookUp,
-        },
-      });
+      };
       return res.status(400).json({ message: "Pricing does not exist." });
     }
 
@@ -137,17 +94,10 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
     );
 
     if (pricingAmount.rows.length === 0) {
-      await Log.auditLogs({
-        user: email,
+      req.auditData = {
         action: "Ticket Purchase",
         details: "Pricing amount does not match amount given.",
-        endPoint: "v1/user/ticket/purchase",
-        date: currentDate,
-        metaData: {
-          ipAddress: ip,
-          location: ipLookUp,
-        },
-      });
+      };
       return res
         .status(400)
         .json({ message: "Pricing amount does not match amount given." });
@@ -161,17 +111,10 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
     );
 
     if (regimePricing.rows.length === 0) {
-      await Log.auditLogs({
-        user: email,
+      req.auditData = {
         action: "Ticket Purchase",
         details: "This pricing does not exist in the regime.",
-        endPoint: "v1/user/ticket/purchase",
-        date: currentDate,
-        metaData: {
-          ipAddress: ip,
-          location: ipLookUp,
-        },
-      });
+      };
       return res
         .status(400)
         .json({ message: "This pricing does not exist in the regime." });
@@ -186,18 +129,11 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
     );
 
     if (isSeatAvailable.rows.length === 0) {
-      await Log.auditLogs({
-        user: email,
+      req.auditData = {
         action: "Ticket Purchase",
         details:
           "The number of tickets you want to purchase is more than the number of available seats for this pricing",
-        endPoint: "v1/user/ticket/purchase",
-        date: currentDate,
-        metaData: {
-          ipAddress: ip,
-          location: ipLookUp,
-        },
-      });
+      };
       return res.status(400).json({
         message:
           "The number of tickets you want to purchase is more than the number of available seats for this pricing",
@@ -211,20 +147,13 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
     const tickets = ticketsOwned.rows.length;
 
     if (tickets + counter > 10) {
-      await Log.auditLogs({
-        user: email,
+      req.auditData = {
         action: "Ticket Purchase",
         details:
           "You can't own more than 10 tickets for any event. You already own " +
           tickets +
           " ticket(s).",
-        endPoint: "v1/user/ticket/purchase",
-        date: currentDate,
-        metaData: {
-          ipAddress: ip,
-          location: ipLookUp,
-        },
-      });
+      };
       return res.status(400).json({
         message:
           "You can't own more than 10 tickets for any event. You already own " +
@@ -293,17 +222,10 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
         }),
       });
 
-      await Log.auditLogs({
-        user: email,
+      req.auditData = {
         action: "Ticket Purchase",
         details: "success",
-        endPoint: "v1/user/ticket/purchase",
-        date: currentDate,
-        metaData: {
-          ipAddress: ip,
-          location: ipLookUp,
-        },
-      });
+      };
       return res.status(200).json({
         message: "Tickets successfully created.",
         data: {
@@ -400,17 +322,10 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
       [reference, transactionId]
     );
 
-    await Log.auditLogs({
-      user: email,
+    req.auditData = {
       action: "Ticket Purchase",
       details: "success",
-      endPoint: "v1/user/ticket/purchase",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+    };
     return res.status(200).json({
       authorization_url: url,
       data: {
@@ -424,20 +339,11 @@ export const ticketPurchase = async (req: ExtendedRequest, res: Response) => {
       },
     });
   } catch (error) {
-    console.log(error);
-
     await pool.query("ROLLBACK");
-    await Log.auditLogs({
-      user: email,
+    req.auditData = {
       action: "Ticket Purchase",
-      details: error.message,
-      endPoint: "v1/user/ticket/purchase",
-      date: currentDate,
-      metaData: {
-        ipAddress: ip,
-        location: ipLookUp,
-      },
-    });
+      details: error?.message ?? error.toString(),
+    };
     return res.status(500).json({ message: "Oops something went wrong..." });
   }
 };

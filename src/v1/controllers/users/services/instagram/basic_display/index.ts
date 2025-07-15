@@ -1,6 +1,5 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import request from "request-promise-native";
-import { ExtendedRequest } from "../../../../../../utilities/authenticateToken/authenticateToken.dto";
 import { pool } from "../../../../../../db";
 
 interface InstaInit {
@@ -32,10 +31,7 @@ interface InstaError {
   error_message: string;
 }
 
-const instagramBasicDisplayInit = async (
-  req: ExtendedRequest,
-  res: Response
-) => {
+const instagramBasicDisplayInit = async (req: Request, res: Response) => {
   const user = req.user;
 
   // checks if user is logged in

@@ -1,14 +1,13 @@
 import { Request, Response } from "express";
-import { ExtendedRequest } from "../../authenticateToken/authenticateToken.dto";
-import { IPinfo } from "node-ipinfo";
+import { IPInfo } from "./auditLogs";
 
 export interface MetaData {
   ipAddress?: string | string[];
-  location?: Partial<IPinfo>;
+  location?: Partial<IPInfo>;
 }
 
 export interface ReturnResponse {
-  req: Request | ExtendedRequest;
+  req: Request | Request;
   res?: Response;
   endPoint?: string;
   logResponse?: any;

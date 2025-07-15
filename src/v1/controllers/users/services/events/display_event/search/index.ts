@@ -1,9 +1,8 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import * as Helpers from "../../../../../../../helpers";
-import { ExtendedRequest } from "../../../../../../../utilities/authenticateToken/authenticateToken.dto";
 import { pool } from "../../../../../../../db";
 
-export const searchEvents = async (req: ExtendedRequest, res: Response) => {
+export const searchEvents = async (req: Request, res: Response) => {
   try {
     const { searchString, type, page = "1", limit = "20" } = req.query;
 

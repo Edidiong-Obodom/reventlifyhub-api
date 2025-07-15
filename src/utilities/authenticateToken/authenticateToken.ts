@@ -1,23 +1,18 @@
-import { Response, NextFunction } from "express";
+import { Response, NextFunction, Request } from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import { ExtendedRequest } from "./authenticateToken.dto";
 
 dotenv.config();
 
 // Authenticate
-function authenticateToken(
-  req: ExtendedRequest,
-  res: Response,
-  next: NextFunction
-) {
+function authenticateToken(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers["authorization"]; // Bearer TOKEN
   const token = authHeader?.split(" ")[1];
   if (token == null) return res.status(401).json({ message: "Null Token" });
   jwt.verify(
     token,
     process.env.ACCESS_TOKEN_SECRET,
-    (error: any, user: ExtendedRequest) => {
+    (error: any, user: Request) => {
       if (error) return res.status(403).json({ message: error.message });
       req.user = user.user;
       req.email = user.email;
