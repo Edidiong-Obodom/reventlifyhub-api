@@ -129,7 +129,7 @@ export const auditLogs = async ({
 
   // insert audit log
   await auditLogsCollection.insertOne({
-    user,
+    user: user ?? ip,
     action,
     details,
     endPoint,

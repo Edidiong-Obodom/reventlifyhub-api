@@ -13,7 +13,7 @@ export const auditMiddleware = () => {
       const duration = Date.now() - startTime;
       const statusCode = res.statusCode;
 
-      const user = req.auditData?.user ?? req.user ?? req.email ?? "anonymous";
+      const user = req.auditData?.user ?? req.user ?? req.email;
       console.log("req.originalUrl: ", req.originalUrl);
 
       const action =

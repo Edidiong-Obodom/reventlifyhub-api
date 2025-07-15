@@ -21,6 +21,7 @@ import {
   transactionList,
   transactionSearch,
 } from "../controllers/users/services/transactions";
+import { auditMiddleware } from "../../utilities/auditMiddleware";
 
 const router = Router();
 
@@ -30,40 +31,76 @@ router.get(
   "/regime/name/availability",
   authenticateToken,
   allRateLimiter,
+  auditMiddleware(),
   nameAvailability
 );
 
 // Create new regime
-router.post("/regime/create", authenticateToken, allRateLimiter, createRegime);
+router.post(
+  "/regime/create",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  createRegime
+);
 
 // ========== Edit regime details ==========
-router.patch("/regime/edit", authenticateToken, allRateLimiter, editRegime);
+router.patch(
+  "/regime/edit",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  editRegime
+);
 router.patch(
   "/regime/edit/image",
   authenticateToken,
   allRateLimiter,
+  auditMiddleware(),
   regimeImageEdit
 );
 // ========== Edit regime details ==========
 
 // ========== View regimes ==========
-router.get("/regime/search", searchEvents);
-router.get("/regime/view", getAllEvents);
-router.get("/regime/view/popular", byPopularity);
+router.get("/regime/search", auditMiddleware(), searchEvents);
+router.get("/regime/view", auditMiddleware(), getAllEvents);
+router.get("/regime/view/popular", auditMiddleware(), byPopularity);
 // ========== View regimes ==========
 
 // ========== Ticket actions ==========
 // Ticket purchase
-router.post("/tickets/purchase", authenticateToken, ticketPurchase);
+router.post(
+  "/tickets/purchase",
+  authenticateToken,
+  auditMiddleware(),
+  ticketPurchase
+);
 
 // Ticket transfer
-router.post("/tickets/transfer", authenticateToken, ticketTransfer);
+router.post(
+  "/tickets/transfer",
+  authenticateToken,
+  auditMiddleware(),
+  ticketTransfer
+);
 
 // Ticket list
-router.get("/tickets/list", authenticateToken, allRateLimiter, ticketList);
+router.get(
+  "/tickets/list",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  ticketList
+);
 
 // Ticket search
-router.get("/tickets/search", authenticateToken, allRateLimiter, ticketSearch);
+router.get(
+  "/tickets/search",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  ticketSearch
+);
 // ========== Ticket actions ==========
 
 // ========== Transaction actions ==========
@@ -72,6 +109,7 @@ router.get(
   "/transactions/list",
   authenticateToken,
   allRateLimiter,
+  auditMiddleware(),
   transactionList
 );
 
@@ -80,6 +118,7 @@ router.get(
   "/transactions/search",
   authenticateToken,
   allRateLimiter,
+  auditMiddleware(),
   transactionSearch
 );
 // ========== Transaction actions ==========
@@ -87,7 +126,11 @@ router.get(
 // ========== Services ==========
 
 // ========== Payments ==========
-router.post("/ticket/purchase/paystack-webhook", paystackWebhook);
+router.post(
+  "/ticket/purchase/paystack-webhook",
+  auditMiddleware(),
+  paystackWebhook
+);
 // ========== Payments ==========
 
 // ========== Archive APIs ==========

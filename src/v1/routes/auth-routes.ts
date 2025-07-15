@@ -14,21 +14,36 @@ import { auditMiddleware } from "../../utilities/auditMiddleware";
 const router = Router();
 
 // sends verification code for reg
-router.post("/signup/send-code", allRateLimiter, sendVerificationCode);
+router.post(
+  "/signup/send-code",
+  allRateLimiter,
+  auditMiddleware(),
+  sendVerificationCode
+);
 
 // registers user
-router.post("/signup/register", allRateLimiter, register);
+router.post("/signup/register", allRateLimiter, auditMiddleware(), register);
 
 // login user
 router.post("/login", loginRateLimiter, auditMiddleware(), login);
 
 // sends verification code for password reset
-router.post("/pw-reset-code", allRateLimiter, sendPWResetCode);
+router.post(
+  "/pw-reset-code",
+  allRateLimiter,
+  auditMiddleware(),
+  sendPWResetCode
+);
 
 // verifies password reset code
-router.post("/pw-reset-code/verify", allRateLimiter, verifyPwResetCode);
+router.post(
+  "/pw-reset-code/verify",
+  allRateLimiter,
+  auditMiddleware(),
+  verifyPwResetCode
+);
 
 // resets password
-router.post("/pw-reset", allRateLimiter, resetPW);
+router.post("/pw-reset", allRateLimiter, auditMiddleware(), resetPW);
 
 export default router;
