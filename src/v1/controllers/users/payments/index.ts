@@ -46,7 +46,6 @@ export const paystackWebhook = async (req: Request, res: Response) => {
           transactionType,
         });
 
-        req.auditData.user = "api.paystack.co";
         return await Log.paystackEditLogs(
           {
             req,
