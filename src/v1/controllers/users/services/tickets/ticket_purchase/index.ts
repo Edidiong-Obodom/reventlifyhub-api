@@ -2,16 +2,12 @@ import { Request, Response } from "express";
 import * as Helpers from "../../../../../../helpers";
 import { pool } from "../../../../../../db";
 import axios from "axios";
-import { getClientIp } from "../../../../../../utilities/logger/allLogs";
-import Log from "../../../../../../utilities/logger";
 
 export const ticketPurchase = async (req: Request, res: Response) => {
   const user = req.user;
   const userName = req.userName;
   const email = req.email;
   const field = ["amount", "pricingId", "regimeId", "counter"];
-  const currentDate = new Date();
-  const { ip, ipLookUp } = await getClientIp(req);
 
   // check data for each field in the request query param and validate format
   const requiredFields = Helpers.requiredFields(req.body, field);

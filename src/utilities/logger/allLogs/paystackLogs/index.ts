@@ -1,11 +1,9 @@
-import Log from "../..";
 import clientPromise from "../../../../mongoDB";
 import { ReturnResponse } from "../allLogs";
-import { getClientIp } from "../auditLogs";
 import { PaystackEditLogs } from "./paystackLogs";
 
 export const paystackEditLogs = async (
-  { req, res, logResponse, logStatusCode, endPoint }: ReturnResponse,
+  { res, logStatusCode }: ReturnResponse,
   {
     actor,
     regimeId,
@@ -47,19 +45,6 @@ export const paystackEditLogs = async (
 
   // Also respond and auto log if you want
   if (res) {
-    const { ip, ipLookUp } = await getClientIp(req);
-
-    await Log.auditLogs({
-      user: actor,
-      action,
-      details: message || status,
-      endPoint: "v1/user/ticket/purchase/paystack-webhook",
-      date,
-      metaData: {
-        
-        
-      },
-    });
     res.send(logStatusCode);
   }
 };

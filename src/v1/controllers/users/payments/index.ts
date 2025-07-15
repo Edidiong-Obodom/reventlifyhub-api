@@ -2,11 +2,9 @@ import { Request, Response } from "express";
 import { createHmac } from "node:crypto";
 import * as tickets from "./tickets";
 import Log from "../../../../utilities/logger";
-import { getClientIp } from "../../../../utilities/logger/allLogs";
 
 export const paystackWebhook = async (req: Request, res: Response) => {
   const currentDate = new Date();
-  const { ip, ipLookUp } = await getClientIp(req);
   const secret = process.env.PAYSTACK_SECRET_KEY;
   const hash = createHmac("sha512", secret)
     .update(JSON.stringify(req.body))
@@ -48,6 +46,7 @@ export const paystackWebhook = async (req: Request, res: Response) => {
           transactionType,
         });
 
+        req.auditData.user = "api.paystack.co";
         return await Log.paystackEditLogs(
           {
             req,

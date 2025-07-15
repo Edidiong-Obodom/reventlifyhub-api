@@ -5,15 +5,11 @@ import * as bcrypt from "bcrypt";
 import cloudinary from "../../../../../../utilities/cloudinary";
 import { CreateRegimeType } from "./create_events_types";
 import moment from "moment";
-import { getClientIp } from "../../../../../../utilities/logger/allLogs";
-import Log from "../../../../../../utilities/logger";
 import { spreader } from "spreader-utils";
 
 // Check for regime name availability
 export const nameAvailability = async (req: Request, res: Response) => {
   const field = ["regimeName"];
-  const currentDate = new Date();
-  const { ip, ipLookUp } = await getClientIp(req);
 
   // check data for each field in the request query param and validate format
   const requiredFields = Helpers.requiredFields(
@@ -113,7 +109,6 @@ export const createRegime = async (req: Request, res: Response) => {
   const userId = req.user;
   const email = req.email;
   const currentDate = new Date();
-  const { ip, ipLookUp } = await getClientIp(req);
   let userName = null;
 
   const userData = await Helpers.findUserById(userId);

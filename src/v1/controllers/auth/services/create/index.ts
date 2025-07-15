@@ -4,8 +4,6 @@ import * as bcrypt from "bcrypt";
 import { pool } from "../../../../../db";
 import * as Helpers from "../../../../../helpers/index";
 import randomString from "random-string";
-import Log from "../../../../../utilities/logger";
-import { getClientIp } from "../../../../../utilities/logger/allLogs";
 
 interface ExtendUser extends User {
   code: string;
@@ -13,8 +11,6 @@ interface ExtendUser extends User {
 
 const sendVerificationCode = async (req: Request, res: Response) => {
   const fields = ["email", "password", "userName"];
-  const currentDate = new Date();
-  const { ip, ipLookUp } = await getClientIp(req);
 
   // check data for each field in the body and validate format
   const fieldCheck = Helpers.requiredFields(req.body, fields);
@@ -159,8 +155,6 @@ const sendVerificationCode = async (req: Request, res: Response) => {
 
 const register = async (req: Request, res: Response) => {
   const fields = ["email", "code"];
-  const currentDate = new Date();
-  const { ip, ipLookUp } = await getClientIp(req);
   // check data for each field in the body and validate format
   const fieldCheck = Helpers.requiredFields(req.body, fields);
 

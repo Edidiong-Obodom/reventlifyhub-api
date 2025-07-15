@@ -4,12 +4,8 @@ import { pool } from "../../../../../db";
 import * as Helpers from "../../../../../helpers/index";
 import randomString from "random-string";
 import { User } from "../create/createUser.dto";
-import Log from "../../../../../utilities/logger";
-import { getClientIp } from "../../../../../utilities/logger/allLogs";
 
 const sendPWResetCode = async (req: Request, res: Response) => {
-  const currentDate = new Date();
-  const { ip, ipLookUp } = await getClientIp(req);
   // Validate email format
   if (!Helpers.emailRegex.test(req.body.email)) {
     return res.status(400).json({ message: "Invalid email format." });
@@ -111,8 +107,6 @@ const sendPWResetCode = async (req: Request, res: Response) => {
 
 export const verifyPwResetCode = async (req: Request, res: Response) => {
   const fields = ["email", "code"];
-  const currentDate = new Date();
-  const { ip, ipLookUp } = await getClientIp(req);
 
   // check data for each field in the body and validate format
   const fieldCheck = Helpers.requiredFields(req.body, fields);
@@ -215,8 +209,6 @@ export const verifyPwResetCode = async (req: Request, res: Response) => {
 
 const resetPW = async (req: Request, res: Response) => {
   const fields = ["email", "password"];
-  const currentDate = new Date();
-  const { ip, ipLookUp } = await getClientIp(req);
 
   // check data for each field in the body and validate format
   const fieldCheck = Helpers.requiredFields(req.body, fields);
