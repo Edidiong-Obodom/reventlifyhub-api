@@ -155,6 +155,7 @@ export const createRegime = async (req: Request, res: Response) => {
     regimeMediaBase64III,
     regimeMediaBase64IV,
     regimeAffiliate,
+    regimeLineUps,
     regimeStartDate,
     regimeStartTime,
     regimeEndDate,
@@ -309,6 +310,60 @@ export const createRegime = async (req: Request, res: Response) => {
     });
   }
 
+  const allowedShortTimeFormat = /^(?:[01]\d|2[0-3]):(?:[0-5]\d)$/;
+  const normalizedLineUps: { title: string; time: string; image: string }[] = [];
+
+  if (regimeLineUps) {
+    if (!Array.isArray(regimeLineUps)) {
+      req.auditData = {
+        action: "Regime Create",
+        details: "Line up must be an array.",
+      };
+      return res.status(400).json({ message: "Line up must be an array." });
+    }
+
+    for (let i = 0; i < regimeLineUps.length; i += 1) {
+      const lineUp = regimeLineUps[i];
+      const title = lineUp?.title?.trim();
+      const image = lineUp?.image;
+      let time = lineUp?.time?.trim();
+
+      if (!title || !image || !time) {
+        req.auditData = {
+          action: "Regime Create",
+          details: `Line up ${i + 1} must include title, time, and image.`,
+        };
+        return res.status(400).json({
+          message: `Line up ${i + 1} must include title, time, and image.`,
+        });
+      }
+
+      if (allowedShortTimeFormat.test(time)) {
+        time = `${time}:00`;
+      } else if (!Helpers.allowedTimeFormat.test(time)) {
+        req.auditData = {
+          action: "Regime Create",
+          details: `Line up ${i + 1} time must be in HH:MM or HH:MM:SS format.`,
+        };
+        return res.status(400).json({
+          message: `Line up ${i + 1} time must be in HH:MM or HH:MM:SS format.`,
+        });
+      }
+
+      if (Helpers.sizeChecker(image).MB > 10) {
+        req.auditData = {
+          action: "Regime Create",
+          details: `Line up ${i + 1} image larger than 10MB`,
+        };
+        return res.status(400).json({
+          message: `Line up ${i + 1} image larger than 10MB`,
+        });
+      }
+
+      normalizedLineUps.push({ title, time, image });
+    }
+  }
+
   // Then do this if all validations pass
   try {
     // checks for name availability
@@ -340,6 +395,23 @@ export const createRegime = async (req: Request, res: Response) => {
       return res.status(400).json("Media larger than 10MB");
     }
     // Use Promise.all for Concurrent Operations
+    const lineUpUploadsPromise =
+      normalizedLineUps.length > 0
+        ? Promise.all(
+            normalizedLineUps.map(async (lineUp) => {
+              const upload = await cloudinary.uploader.upload(lineUp.image, {
+                folder: "regime_lineups",
+              });
+              return {
+                title: lineUp.title,
+                time: lineUp.time,
+                imageUrl: upload.secure_url,
+                imageId: upload.public_id,
+              };
+            })
+          )
+        : Promise.resolve([]);
+
     const [
       hashedPin,
       resultOfUpdate,
@@ -347,6 +419,7 @@ export const createRegime = async (req: Request, res: Response) => {
       resultOfUpdateII,
       resultOfUpdateIII,
       resultOfUpdateIv,
+      lineUpUploads,
     ] = await Promise.all([
       bcrypt.hash(regimeWithdrawalPin, 10),
       cloudinary.uploader.upload(regimeMediaBase64, { folder: "regime_media" }),
@@ -370,6 +443,7 @@ export const createRegime = async (req: Request, res: Response) => {
             folder: "regime_media",
           })
         : { secure_url: undefined, public_id: undefined },
+      lineUpUploadsPromise,
     ]);
 
     await pool.query("BEGIN");
@@ -444,6 +518,21 @@ export const createRegime = async (req: Request, res: Response) => {
         ]
       );
     }
+
+    for (const lineUp of lineUpUploads) {
+      await pool.query(
+        `INSERT INTO regime_lineups(regime_id, title, performance_time, image, image_id) 
+        VALUES($1, $2, $3, $4, $5) RETURNING *`,
+        [
+          newRegime.rows[0].id,
+          lineUp.title,
+          lineUp.time,
+          lineUp.imageUrl,
+          lineUp.imageId,
+        ]
+      );
+    }
+
     await pool.query(
       `
       INSERT INTO regime_participant(participant_id, regime_id, participant_role) 

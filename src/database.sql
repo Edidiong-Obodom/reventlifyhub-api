@@ -9,7 +9,8 @@ CREATE TABLE
         available_balance NUMERIC(17, 2) NOT NULL DEFAULT 0.00,
         currency VARCHAR(3) NOT NULL DEFAULT 'ngn',
         modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_deleted BOOLEAN NOT NULL DEFAULT false
     );
 
 CREATE TABLE
@@ -20,7 +21,8 @@ CREATE TABLE
         user_name VARCHAR(17) NOT NULL,
         password TEXT NOT NULL,
         modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_deleted BOOLEAN NOT NULL DEFAULT false
     );
 
 CREATE TABLE
@@ -41,21 +43,24 @@ CREATE TABLE
         photo_id TEXT,
         balance NUMERIC(17, 2) NOT NULL DEFAULT 0.00,
         modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_deleted BOOLEAN NOT NULL DEFAULT false
     );
 
 CREATE TABLE 
     followers (
         id TEXT PRIMARY KEY DEFAULT uuid_generate_v4 (),
         influencer TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE ON UPDATE CASCADE,
-        follower TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE ON UPDATE CASCADE
+        follower TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE ON UPDATE CASCADE,
+        is_deleted BOOLEAN NOT NULL DEFAULT false
     );
 
 CREATE TABLE 
     conversations (
         id TEXT NOT NULL UNIQUE,
         client1_id TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE ON UPDATE CASCADE,
-        client2_id TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE ON UPDATE CASCADE
+        client2_id TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE ON UPDATE CASCADE,
+        is_deleted BOOLEAN NOT NULL DEFAULT false
     );
 CREATE TABLE 
     messages (
@@ -67,7 +72,8 @@ CREATE TABLE
         message_media_id TEXT,
         delete_message BOOLEAN NOT NULL DEFAULT false,
         seen BOOLEAN NOT NULL DEFAULT false,
-        sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_deleted BOOLEAN NOT NULL DEFAULT false
     );
 
 CREATE TABLE
@@ -77,7 +83,8 @@ CREATE TABLE
         reset_code VARCHAR(8) NOT NULL,
         status VARCHAR(7) NOT NULL DEFAULT 'pending',
         modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_deleted BOOLEAN NOT NULL DEFAULT false
     );
 
 CREATE TABLE
@@ -111,7 +118,21 @@ CREATE TABLE
         end_date DATE NOT NULL,
         end_time TIME NOT NULL,
         modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_deleted BOOLEAN NOT NULL DEFAULT false
+    );
+
+CREATE TABLE
+    regime_lineups (
+        id TEXT PRIMARY KEY DEFAULT uuid_generate_v4 (),
+        regime_id TEXT NOT NULL REFERENCES regimes (id) ON DELETE CASCADE ON UPDATE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        performance_time TIME NOT NULL,
+        image TEXT NOT NULL,
+        image_id TEXT NOT NULL,
+        modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_deleted BOOLEAN NOT NULL DEFAULT false
     );
 
 CREATE TABLE
@@ -126,7 +147,8 @@ CREATE TABLE
         new_participant_titles VARCHAR(20)[],
         affiliated_participants VARCHAR(20)[] NOT NULL DEFAULT ARRAY['affiliate', 'owner', 'creator', 'admin'],
         modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_deleted BOOLEAN NOT NULL DEFAULT false
     );
 
 CREATE TABLE transactions (
@@ -157,7 +179,8 @@ CREATE TABLE transactions (
     status TEXT DEFAULT 'pending',
     payment_gateway TEXT NOT NULL DEFAULT 'internal',
     modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN NOT NULL DEFAULT false
 );
 
 
@@ -170,6 +193,7 @@ CREATE TABLE
         balance NUMERIC(17, 2) NOT NULL DEFAULT 0.00,
         modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_deleted BOOLEAN NOT NULL DEFAULT false,
         CONSTRAINT unique_regime_and_unique_participant UNIQUE (regime_id, participant_id)
     );
 
@@ -183,7 +207,8 @@ CREATE TABLE
         status TEXT NOT NULL,
         affiliate_id TEXT REFERENCES clients (id) ON DELETE CASCADE ON UPDATE CASCADE,
         modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_deleted BOOLEAN NOT NULL DEFAULT false
     );
 
 -- Indexes

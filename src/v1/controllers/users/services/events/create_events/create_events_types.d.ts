@@ -15,10 +15,18 @@ export interface CreateRegimeType {
   regimeMediaBase64III?: string;
   regimeMediaBase64IV?: string;
   regimeAffiliate: boolean;
+  regimeLineUps?: RegimeLineUp[];
   regimeStartDate: string;
   regimeStartTime: string;
   regimeEndDate: string;
   regimeEndTime: string;
+}
+
+export interface RegimeLineUp {
+  id?: string;
+  title: string;
+  time: string;
+  image: string;
 }
 
 export type RegimeType =
