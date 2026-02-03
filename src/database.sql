@@ -41,6 +41,8 @@ CREATE TABLE
         gender VARCHAR(6),
         photo TEXT,
         photo_id TEXT,
+        bio TEXT,
+        interests TEXT[] DEFAULT ARRAY[]::TEXT[],
         balance NUMERIC(17, 2) NOT NULL DEFAULT 0.00,
         modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -696,3 +698,7 @@ alter table regimes add column media_i TEXT,
         add column media_id_iii TEXT,
         add column media_iv TEXT,
         add column media_id_iv TEXT;
+
+ALTER TABLE clients
+ADD COLUMN bio TEXT,
+ADD COLUMN interests TEXT[] DEFAULT ARRAY[]::TEXT[];

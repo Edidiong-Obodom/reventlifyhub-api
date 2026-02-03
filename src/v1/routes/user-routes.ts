@@ -11,9 +11,11 @@ import {
   listBookmarkIds,
   listBookmarks,
   nameAvailability,
+  getProfile,
   regimeImageEdit,
   searchEvents,
   unbookmarkRegime,
+  updateProfile,
   ticketList,
   ticketPurchase,
   ticketSearch,
@@ -70,6 +72,23 @@ router.get("/regime/search", auditMiddleware(), searchEvents);
 router.get("/regime/view", auditMiddleware(), getAllEvents);
 router.get("/regime/view/popular", auditMiddleware(), byPopularity);
 // ========== View regimes ==========
+
+// ========== Profile ==========
+router.get(
+  "/profile",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  getProfile
+);
+router.patch(
+  "/profile",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  updateProfile
+);
+// ========== Profile ==========
 
 // ========== Bookmarks ==========
 router.get(
