@@ -48,6 +48,21 @@ export const searchEvents = async (req: Request, res: Response) => {
           r.end_time,
           r.media AS regime_banner,
           ARRAY_REMOVE(ARRAY[r.media_i, r.media_ii, r.media_iii, r.media_iv], NULL) AS regime_gallery,
+          (
+            SELECT COALESCE(
+              JSON_AGG(
+                DISTINCT JSONB_BUILD_OBJECT(
+                  'id', rl.id,
+                  'title', rl.title,
+                  'performance_time', rl.performance_time,
+                  'image', rl.image,
+                  'image_id', rl.image_id
+                )
+              ) FILTER (WHERE rl.id IS NOT NULL), '[]'
+            )
+            FROM regime_lineups rl
+            WHERE rl.regime_id = r.id AND rl.is_deleted = false
+          ) AS regime_lineups,
           COALESCE(SUM(CASE WHEN t.id IS NOT NULL THEN 1 ELSE 0 END), 0) AS total_ticket_sales,
           COALESCE(SUM(CASE WHEN t.id IS NOT NULL THEN p.amount ELSE 0 END), 0) AS total_revenue,
           COALESCE(
