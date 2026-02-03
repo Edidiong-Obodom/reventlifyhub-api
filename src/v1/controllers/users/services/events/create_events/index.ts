@@ -469,7 +469,7 @@ export const createRegime = async (req: Request, res: Response) => {
         resultOfUpdateIv.secure_url,
         resultOfUpdateIv.public_id,
       ],
-      18
+      19
     );
 
     // creates the regime
