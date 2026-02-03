@@ -7,9 +7,13 @@ import {
   fetchImage,
   getAllEvents,
   instagramBasicDisplayInit,
+  bookmarkRegime,
+  listBookmarkIds,
+  listBookmarks,
   nameAvailability,
   regimeImageEdit,
   searchEvents,
+  unbookmarkRegime,
   ticketList,
   ticketPurchase,
   ticketSearch,
@@ -66,6 +70,37 @@ router.get("/regime/search", auditMiddleware(), searchEvents);
 router.get("/regime/view", auditMiddleware(), getAllEvents);
 router.get("/regime/view/popular", auditMiddleware(), byPopularity);
 // ========== View regimes ==========
+
+// ========== Bookmarks ==========
+router.get(
+  "/regime/bookmarks",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  listBookmarks
+);
+router.get(
+  "/regime/bookmarks/ids",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  listBookmarkIds
+);
+router.post(
+  "/regime/bookmark",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  bookmarkRegime
+);
+router.delete(
+  "/regime/bookmark",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  unbookmarkRegime
+);
+// ========== Bookmarks ==========
 
 // ========== Ticket actions ==========
 // Ticket purchase

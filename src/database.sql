@@ -136,6 +136,17 @@ CREATE TABLE
     );
 
 CREATE TABLE
+    regime_bookmarks (
+        id TEXT PRIMARY KEY DEFAULT uuid_generate_v4 (),
+        client_id TEXT NOT NULL REFERENCES clients (id) ON DELETE CASCADE ON UPDATE CASCADE,
+        regime_id TEXT NOT NULL REFERENCES regimes (id) ON DELETE CASCADE ON UPDATE CASCADE,
+        modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_deleted BOOLEAN NOT NULL DEFAULT false,
+        CONSTRAINT unique_regime_bookmark UNIQUE (client_id, regime_id)
+    );
+
+CREATE TABLE
     pricings (
         id TEXT PRIMARY KEY DEFAULT uuid_generate_v4 (),
         regime_id TEXT NOT NULL REFERENCES regimes (id) ON DELETE CASCADE ON UPDATE CASCADE,
