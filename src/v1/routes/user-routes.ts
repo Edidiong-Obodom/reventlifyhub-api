@@ -15,6 +15,7 @@ import {
   regimeImageEdit,
   searchEvents,
   unbookmarkRegime,
+  updateLocation,
   updateProfile,
   ticketList,
   ticketPurchase,
@@ -87,6 +88,13 @@ router.patch(
   allRateLimiter,
   auditMiddleware(),
   updateProfile
+);
+router.patch(
+  "/profile/location",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  updateLocation
 );
 // ========== Profile ==========
 

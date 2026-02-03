@@ -43,6 +43,7 @@ CREATE TABLE
         photo_id TEXT,
         bio TEXT,
         interests TEXT[] DEFAULT ARRAY[]::TEXT[],
+        last_location_update TIMESTAMP,
         balance NUMERIC(17, 2) NOT NULL DEFAULT 0.00,
         modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
