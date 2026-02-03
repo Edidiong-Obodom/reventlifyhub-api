@@ -12,8 +12,12 @@ import {
   listBookmarks,
   nameAvailability,
   getProfile,
+  getRegimesByCreator,
+  getUserProfileById,
+  followUser,
   regimeImageEdit,
   searchEvents,
+  unfollowUser,
   unbookmarkRegime,
   updateLocation,
   updateProfile,
@@ -95,6 +99,34 @@ router.patch(
   allRateLimiter,
   auditMiddleware(),
   updateLocation
+);
+router.get(
+  "/profile/:id",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  getUserProfileById
+);
+router.get(
+  "/profile/:id/regimes",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  getRegimesByCreator
+);
+router.post(
+  "/profile/:id/follow",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  followUser
+);
+router.delete(
+  "/profile/:id/follow",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  unfollowUser
 );
 // ========== Profile ==========
 

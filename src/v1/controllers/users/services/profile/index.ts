@@ -37,7 +37,9 @@ export const getProfile = async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       `SELECT id, first_name, last_name, user_name, email, photo, bio, interests,
-              address, city, state, country, last_location_update
+              address, city, state, country, last_location_update,
+              (SELECT COUNT(*) FROM followers WHERE influencer = clients.id AND is_deleted = false) AS followers_count,
+              (SELECT COUNT(*) FROM followers WHERE follower = clients.id AND is_deleted = false) AS following_count
        FROM clients WHERE id = $1 AND is_deleted = false`,
       [userId]
     );
@@ -66,6 +68,8 @@ export const getProfile = async (req: Request, res: Response) => {
         state: user.state,
         country: user.country,
         lastLocationUpdate: user.last_location_update,
+        followersCount: Number(user.followers_count ?? 0),
+        followingCount: Number(user.following_count ?? 0),
       },
     });
   } catch (error) {
@@ -167,6 +171,14 @@ export const updateProfile = async (req: Request, res: Response) => {
     }
 
     const user = result.rows[0];
+    const counts = await pool.query(
+      `SELECT 
+          (SELECT COUNT(*) FROM followers WHERE influencer = $1 AND is_deleted = false) AS followers_count,
+          (SELECT COUNT(*) FROM followers WHERE follower = $1 AND is_deleted = false) AS following_count`,
+      [user.id]
+    );
+    const followersCount = Number(counts.rows[0]?.followers_count ?? 0);
+    const followingCount = Number(counts.rows[0]?.following_count ?? 0);
     const nameParts = [user.first_name, user.last_name].filter(Boolean);
 
     return res.status(200).json({
@@ -186,6 +198,8 @@ export const updateProfile = async (req: Request, res: Response) => {
         state: user.state,
         country: user.country,
         lastLocationUpdate: user.last_location_update,
+        followersCount,
+        followingCount,
       },
     });
   } catch (error) {
@@ -277,5 +291,198 @@ export const updateLocation = async (req: Request, res: Response) => {
     });
   } catch (error) {
     return res.status(500).json({ message: error?.message ?? error?.toString() });
+  }
+};
+
+export const getUserProfileById = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const viewerId = req.user;
+
+  try {
+    const result = await pool.query(
+      `SELECT id, first_name, last_name, user_name, email, photo, bio, interests,
+              address, city, state, country,
+              (SELECT COUNT(*) FROM followers WHERE influencer = clients.id AND is_deleted = false) AS followers_count,
+              (SELECT COUNT(*) FROM followers WHERE follower = clients.id AND is_deleted = false) AS following_count,
+              (SELECT EXISTS(
+                SELECT 1 FROM followers 
+                WHERE influencer = clients.id AND follower = $2 AND is_deleted = false
+              )) AS is_following
+       FROM clients WHERE id = $1 AND is_deleted = false`,
+      [id, viewerId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    const user = result.rows[0];
+    const nameParts = [user.first_name, user.last_name].filter(Boolean);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        id: user.id,
+        name: nameParts.join(" ").trim(),
+        firstName: user.first_name,
+        lastName: user.last_name,
+        userName: user.user_name,
+        email: user.email,
+        photo: user.photo,
+        bio: user.bio,
+        interests: user.interests ?? [],
+        address: user.address,
+        city: user.city,
+        state: user.state,
+        country: user.country,
+        followersCount: Number(user.followers_count ?? 0),
+        followingCount: Number(user.following_count ?? 0),
+        isFollowing: user.is_following === true,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error?.message ?? error?.toString() });
+  }
+};
+
+export const followUser = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const followerId = req.user;
+
+  if (id === followerId) {
+    return res.status(400).json({ message: "You cannot follow yourself." });
+  }
+
+  try {
+    const userCheck = await pool.query(
+      "SELECT id FROM clients WHERE id = $1 AND is_deleted = false",
+      [id]
+    );
+
+    if (userCheck.rows.length === 0) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    const existing = await pool.query(
+      "SELECT id, is_deleted FROM followers WHERE influencer = $1 AND follower = $2",
+      [id, followerId]
+    );
+
+    if (existing.rows.length > 0) {
+      if (existing.rows[0].is_deleted) {
+        await pool.query(
+          "UPDATE followers SET is_deleted = false WHERE id = $1",
+          [existing.rows[0].id]
+        );
+      }
+      return res.status(200).json({ success: true, following: true });
+    }
+
+    await pool.query(
+      "INSERT INTO followers(influencer, follower) VALUES($1, $2)",
+      [id, followerId]
+    );
+
+    return res.status(200).json({ success: true, following: true });
+  } catch (error) {
+    return res.status(500).json({ message: error?.message ?? error?.toString() });
+  }
+};
+
+export const unfollowUser = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const followerId = req.user;
+
+  if (id === followerId) {
+    return res.status(400).json({ message: "You cannot unfollow yourself." });
+  }
+
+  try {
+    const result = await pool.query(
+      "UPDATE followers SET is_deleted = true WHERE influencer = $1 AND follower = $2 AND is_deleted = false RETURNING id",
+      [id, followerId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Follow relationship not found." });
+    }
+
+    return res.status(200).json({ success: true, following: false });
+  } catch (error) {
+    return res.status(500).json({ message: error?.message ?? error?.toString() });
+  }
+};
+
+export const getRegimesByCreator = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { page = "1", limit = "20" } = req.query;
+
+    if (isNaN(Number(page)) || isNaN(Number(limit))) {
+      return res.status(400).json({
+        success: false,
+        message: "Page and limit must be numeric values.",
+      });
+    }
+
+    const offset = (Number(page) - 1) * Number(limit);
+    const values: any[] = [id, Number(limit), offset];
+
+    const query = `
+      SELECT 
+          r.id,
+          r.name,
+          r.type,
+          r.creator_id,
+          c.user_name AS creator_user_name,
+          c.photo AS creator_photo,
+          r.address,
+          r.city,
+          r.state,
+          r.country,
+          r.description,
+          r.venue,
+          r.start_date,
+          r.start_time,
+          r.end_date,
+          r.end_time,
+          r.media AS regime_banner,
+          ARRAY_REMOVE(ARRAY[r.media_i, r.media_ii, r.media_iii, r.media_iv], NULL) AS regime_gallery,
+          COALESCE(SUM(CASE WHEN t.id IS NOT NULL THEN 1 ELSE 0 END), 0) AS total_ticket_sales,
+          COALESCE(SUM(CASE WHEN t.id IS NOT NULL THEN p.amount ELSE 0 END), 0) AS total_revenue,
+          COALESCE(
+              JSON_AGG(
+                  DISTINCT JSONB_BUILD_OBJECT(
+                      'id', p.id,
+                      'name', p.name,
+                      'total_seats', p.total_seats,
+                      'available_seats', p.available_seats,
+                      'amount', p.amount
+                  )
+              ) FILTER (WHERE p.id IS NOT NULL), '[]'
+          ) AS pricings
+      FROM regimes r
+      JOIN clients c ON r.creator_id = c.id
+      LEFT JOIN pricings p ON r.id = p.regime_id
+      LEFT JOIN tickets t ON p.id = t.pricing_id
+      WHERE r.creator_id = $1
+        AND r.is_deleted = false
+      GROUP BY r.id, c.id
+      ORDER BY r.created_at DESC
+      LIMIT $2 OFFSET $3;
+    `;
+
+    const result = await pool.query(query, values);
+
+    return res.status(200).json({
+      success: true,
+      data: result.rows,
+      page: Number(page),
+      limit: Number(limit),
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
   }
 };
