@@ -142,6 +142,7 @@ export const listBookmarks = async (req: Request, res: Response) => {
                   )
               ) FILTER (WHERE p.id IS NOT NULL), '[]'
           ) AS pricings,
+          MAX(b.created_at) AS bookmarked_at,
           true AS is_bookmarked
       FROM regime_bookmarks b
       JOIN regimes r ON b.regime_id = r.id
@@ -153,7 +154,7 @@ export const listBookmarks = async (req: Request, res: Response) => {
         AND (r.status = 'pending' OR r.status = 'ongoing')
         AND (r.end_date + r.end_time)::timestamp > CURRENT_TIMESTAMP
       GROUP BY r.id, c.id
-      ORDER BY b.created_at DESC
+      ORDER BY bookmarked_at DESC
       LIMIT $2 OFFSET $3;
     `;
 
