@@ -703,3 +703,489 @@ alter table regimes add column media_i TEXT,
 ALTER TABLE clients
 ADD COLUMN bio TEXT,
 ADD COLUMN interests TEXT[] DEFAULT ARRAY[]::TEXT[];
+
+
+-- New transaction handling flow BEGIN
+
+-- ============================================================================
+-- HELPER FUNCTIONS (No changes needed - already enhanced)
+-- ============================================================================
+
+-- Function to check and debit balance with locking
+CREATE OR REPLACE FUNCTION debit_client_balance(
+    p_client_id TEXT,
+    p_amount NUMERIC(17, 2)
+) RETURNS NUMERIC(17, 2) AS $$
+DECLARE
+    v_new_balance NUMERIC(17, 2);
+BEGIN
+    -- Lock the row and check balance in one atomic operation
+    UPDATE clients
+    SET balance = balance - p_amount
+    WHERE id = p_client_id
+      AND balance >= p_amount  -- Atomic check and update
+    RETURNING balance INTO v_new_balance;
+    
+    IF NOT FOUND THEN
+        DECLARE
+            v_current_balance NUMERIC(17, 2);
+        BEGIN
+            SELECT balance INTO v_current_balance
+            FROM clients
+            WHERE id = p_client_id;
+            
+            RAISE EXCEPTION 'Insufficient balance for transaction. Client ID: %, Balance: %, Required: %',
+                p_client_id, COALESCE(v_current_balance, 0), p_amount;
+        END;
+    END IF;
+    
+    RETURN v_new_balance;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to debit regime balance with locking
+CREATE OR REPLACE FUNCTION debit_regime_balance(
+    p_regime_id TEXT,
+    p_amount NUMERIC(17, 2)
+) RETURNS NUMERIC(17, 2) AS $$
+DECLARE
+    v_new_balance NUMERIC(17, 2);
+BEGIN
+    UPDATE regimes
+    SET balance = balance - p_amount
+    WHERE id = p_regime_id
+      AND balance >= p_amount
+    RETURNING balance INTO v_new_balance;
+    
+    IF NOT FOUND THEN
+        DECLARE
+            v_current_balance NUMERIC(17, 2);
+        BEGIN
+            SELECT balance INTO v_current_balance
+            FROM regimes
+            WHERE id = p_regime_id;
+            
+            RAISE EXCEPTION 'Insufficient balance for transaction. Regime ID: %, Balance: %, Required: %',
+                p_regime_id, COALESCE(v_current_balance, 0), p_amount;
+        END;
+    END IF;
+    
+    RETURN v_new_balance;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to credit client balance
+CREATE OR REPLACE FUNCTION credit_client_balance(
+    p_client_id TEXT,
+    p_amount NUMERIC(17, 2)
+) RETURNS NUMERIC(17, 2) AS $$
+DECLARE
+    v_new_balance NUMERIC(17, 2);
+BEGIN
+    UPDATE clients
+    SET balance = balance + p_amount
+    WHERE id = p_client_id
+    RETURNING balance INTO v_new_balance;
+    
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Client not found: %', p_client_id;
+    END IF;
+    
+    RETURN v_new_balance;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to credit regime balance
+CREATE OR REPLACE FUNCTION credit_regime_balance(
+    p_regime_id TEXT,
+    p_amount NUMERIC(17, 2)
+) RETURNS NUMERIC(17, 2) AS $$
+DECLARE
+    v_new_balance NUMERIC(17, 2);
+BEGIN
+    UPDATE regimes
+    SET balance = balance + p_amount
+    WHERE id = p_regime_id
+    RETURNING balance INTO v_new_balance;
+    
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Regime not found: %', p_regime_id;
+    END IF;
+    
+    RETURN v_new_balance;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to create credit transaction record
+CREATE OR REPLACE FUNCTION create_credit_transaction(
+    p_transaction RECORD,
+    p_transaction_type TEXT,
+    p_credited_balance NUMERIC(17, 2),
+    p_client_id TEXT DEFAULT NULL,
+    p_regime_id TEXT DEFAULT NULL,
+    p_beneficiary TEXT DEFAULT NULL,
+    p_company TEXT DEFAULT NULL,
+    p_amount NUMERIC(17, 2) DEFAULT NULL
+) RETURNS VOID AS $$
+BEGIN
+    INSERT INTO transactions (
+        client_id, regime_id, beneficiary, company, transaction_type, 
+        actual_amount, currency, treated, transaction_reference,
+        balance_after_transaction, is_recursion, transaction_action, 
+        description, local_bank, local_account_no, local_account_name, 
+        payment_gateway, status, parent
+    )
+    VALUES (
+        p_client_id,
+        p_regime_id,
+        p_beneficiary,
+        p_company,
+        p_transaction_type,
+        COALESCE(p_amount, p_transaction.amount),
+        p_transaction.currency,
+        TRUE,
+        p_transaction.transaction_reference,
+        p_credited_balance,
+        TRUE,  -- Mark as recursion to prevent re-processing
+        p_transaction.transaction_action,
+        p_transaction.description,
+        p_transaction.local_bank,
+        p_transaction.local_account_no,
+        p_transaction.local_account_name,
+        p_transaction.payment_gateway,
+        p_transaction.status,
+        p_transaction.id
+    );
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================================
+-- TRIGGER FUNCTIONS (Updated with your defensive pattern)
+-- ============================================================================
+
+-- Trigger 1: Handle INTRA-DEBIT (Client to Regime)
+CREATE OR REPLACE FUNCTION handle_intra_debit_client_to_regime()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_debited_balance NUMERIC(17, 2);
+    v_credited_balance NUMERIC(17, 2);
+BEGIN
+    -- ✅ Your defensive pattern: Only process untreated successful transactions
+    IF NEW.treated IS NOT TRUE AND NEW.status = 'success' THEN
+        
+        -- Only handle intra-debit transactions
+        IF NEW.transaction_type = 'intra-debit' THEN
+            
+            -- Only handle client -> regime transfers
+            IF NEW.client_id IS NOT NULL AND NEW.regime_id IS NOT NULL AND NEW.beneficiary IS NULL THEN
+                
+                -- Debit client (with atomic balance check)
+                v_debited_balance := debit_client_balance(NEW.client_id, NEW.amount);
+                
+                -- Credit regime
+                v_credited_balance := credit_regime_balance(NEW.regime_id, NEW.amount);
+                
+                -- Create corresponding credit transaction
+                PERFORM create_credit_transaction(
+                    NEW,
+                    'intra-credit',
+                    v_credited_balance,
+                    p_client_id := NEW.client_id,
+                    p_regime_id := NEW.regime_id
+                );
+                
+                -- Mark as treated and store balance
+                NEW.treated := TRUE;
+                NEW.balance_after_transaction := v_debited_balance;
+            END IF;
+        END IF;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger 2: Handle INTRA-DEBIT (Client to Client)
+CREATE OR REPLACE FUNCTION handle_intra_debit_client_to_client()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_debited_balance NUMERIC(17, 2);
+    v_credited_balance NUMERIC(17, 2);
+BEGIN
+    -- ✅ Your defensive pattern
+    IF NEW.treated IS NOT TRUE AND NEW.status = 'success' THEN
+        
+        IF NEW.transaction_type = 'intra-debit' THEN
+            
+            -- Only handle client -> client transfers (no regime involved)
+            IF NEW.client_id IS NOT NULL AND NEW.beneficiary IS NOT NULL AND NEW.regime_id IS NULL THEN
+                
+                -- Debit sender
+                v_debited_balance := debit_client_balance(NEW.client_id, NEW.amount);
+                
+                -- Credit beneficiary
+                v_credited_balance := credit_client_balance(NEW.beneficiary, NEW.amount);
+                
+                -- Create corresponding credit transaction
+                PERFORM create_credit_transaction(
+                    NEW,
+                    'intra-credit',
+                    v_credited_balance,
+                    p_client_id := NEW.beneficiary,
+                    p_beneficiary := NEW.client_id
+                );
+                
+                -- Mark as treated
+                NEW.treated := TRUE;
+                NEW.balance_after_transaction := v_debited_balance;
+            END IF;
+        END IF;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger 3: Handle INTRA-DEBIT (Regime to Client)
+CREATE OR REPLACE FUNCTION handle_intra_debit_regime_to_client()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_debited_balance NUMERIC(17, 2);
+    v_credited_balance NUMERIC(17, 2);
+BEGIN
+    -- ✅ Your defensive pattern
+    IF NEW.treated IS NOT TRUE AND NEW.status = 'success' THEN
+        
+        IF NEW.transaction_type = 'intra-debit' THEN
+            
+            -- Only handle regime -> client transfers
+            IF NEW.regime_id IS NOT NULL AND NEW.beneficiary IS NOT NULL AND NEW.client_id IS NULL THEN
+                
+                -- Debit regime
+                v_debited_balance := debit_regime_balance(NEW.regime_id, NEW.amount);
+                
+                -- Credit client
+                v_credited_balance := credit_client_balance(NEW.beneficiary, NEW.amount);
+                
+                -- Create corresponding credit transaction
+                PERFORM create_credit_transaction(
+                    NEW,
+                    'intra-credit',
+                    v_credited_balance,
+                    p_beneficiary := NEW.beneficiary,
+                    p_regime_id := NEW.regime_id
+                );
+                
+                -- Mark as treated
+                NEW.treated := TRUE;
+                NEW.balance_after_transaction := v_debited_balance;
+            END IF;
+        END IF;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger 4: Handle INTER-DEBIT (Client Withdrawal to Bank)
+CREATE OR REPLACE FUNCTION handle_inter_debit_withdrawal()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_debited_balance NUMERIC(17, 2);
+BEGIN
+    -- ✅ Your defensive pattern
+    IF NEW.treated IS NOT TRUE AND NEW.status = 'success' THEN
+        
+        IF NEW.transaction_type = 'inter-debit' THEN
+            
+            -- Only handle client withdrawals (client_id = beneficiary, money leaving system)
+            IF NEW.client_id IS NOT NULL AND NEW.beneficiary IS NOT NULL 
+               AND NEW.client_id = NEW.beneficiary AND NEW.regime_id IS NULL THEN
+                
+                -- Debit client
+                v_debited_balance := debit_client_balance(NEW.client_id, NEW.amount);
+                
+                -- Mark as treated
+                NEW.treated := TRUE;
+                NEW.balance_after_transaction := v_debited_balance;
+            END IF;
+        END IF;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger 5: Handle INTER-DEBIT (Ticket Purchase via External Gateway)
+CREATE OR REPLACE FUNCTION handle_inter_debit_ticket_purchase()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_credited_balance NUMERIC(17, 2);
+    v_affiliate_balance NUMERIC(17, 2);
+    v_company_balance NUMERIC(17, 2);
+    v_company_id TEXT;
+BEGIN
+    -- ✅ Your defensive pattern
+    -- This trigger fires when webhook updates transaction status to 'success'
+    IF NEW.treated IS NOT TRUE AND NEW.status = 'success' THEN
+        
+        IF NEW.transaction_type = 'inter-debit' THEN
+            
+            -- Only handle ticket purchases (has regime_id, external payment)
+            IF NEW.client_id IS NOT NULL AND NEW.regime_id IS NOT NULL THEN
+                
+                -- Credit regime with ticket revenue
+                v_credited_balance := credit_regime_balance(NEW.regime_id, NEW.amount);
+                
+                -- Create credit transaction for regime
+                PERFORM create_credit_transaction(
+                    NEW,
+                    'inter-credit',
+                    v_credited_balance,
+                    p_client_id := NEW.client_id,
+                    p_regime_id := NEW.regime_id
+                );
+                
+                -- Credit affiliate if commission exists
+                IF NEW.affiliate_amount IS NOT NULL AND NEW.affiliate_amount > 0 AND NEW.affiliate_id IS NOT NULL THEN
+                    v_affiliate_balance := credit_client_balance(NEW.affiliate_id, NEW.affiliate_amount);
+                    
+                    PERFORM create_credit_transaction(
+                        NEW,
+                        'inter-credit',
+                        v_affiliate_balance,
+                        p_client_id := NEW.client_id,
+                        p_regime_id := NEW.regime_id,
+                        p_beneficiary := NEW.affiliate_id,
+                        p_amount := NEW.affiliate_amount
+                    );
+                END IF;
+                
+                -- Credit company with platform fees
+                IF NEW.company_charge IS NOT NULL AND NEW.company_charge > 0 THEN
+                    UPDATE company_funds
+                    SET available_balance = available_balance + NEW.company_charge
+                    WHERE currency ILIKE NEW.currency
+                    RETURNING available_balance, id INTO v_company_balance, v_company_id;
+                    
+                    IF NOT FOUND THEN
+                        RAISE EXCEPTION 'Company fund not found for currency: %', NEW.currency;
+                    END IF;
+                    
+                    PERFORM create_credit_transaction(
+                        NEW,
+                        'inter-credit',
+                        v_company_balance,
+                        p_client_id := NEW.client_id,
+                        p_regime_id := NEW.regime_id,
+                        p_company := v_company_id,
+                        p_amount := NEW.company_charge
+                    );
+                END IF;
+                
+                -- Mark as treated (no client balance change for external payment)
+                NEW.treated := TRUE;
+                NEW.balance_after_transaction := 0;
+            END IF;
+        END IF;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger 6: Handle INTER-CREDIT (External Money Coming In)
+CREATE OR REPLACE FUNCTION handle_inter_credit()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_credited_balance NUMERIC(17, 2);
+BEGIN
+    -- ✅ Your defensive pattern
+    IF NEW.treated IS NOT TRUE AND NEW.status = 'success' THEN
+        
+        IF NEW.transaction_type = 'inter-credit' THEN
+            
+            -- Skip if this is a recursion (auto-generated credit from triggers)
+            IF NEW.is_recursion IS NOT TRUE THEN
+                
+                -- Credit the beneficiary if specified
+                IF NEW.beneficiary IS NOT NULL THEN
+                    v_credited_balance := credit_client_balance(NEW.beneficiary, NEW.amount);
+                    
+                    -- Mark as treated
+                    NEW.treated := TRUE;
+                    NEW.balance_after_transaction := v_credited_balance;
+                END IF;
+            END IF;
+        END IF;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================================
+-- REGISTER TRIGGERS
+-- ============================================================================
+
+-- Drop old triggers if they exist
+DROP TRIGGER IF EXISTS trg_update_balance_and_create_credit ON transactions;
+DROP TRIGGER IF EXISTS trg_01_intra_debit_client_to_regime ON transactions;
+DROP TRIGGER IF EXISTS trg_02_intra_debit_client_to_client ON transactions;
+DROP TRIGGER IF EXISTS trg_03_intra_debit_regime_to_client ON transactions;
+DROP TRIGGER IF EXISTS trg_04_inter_debit_withdrawal ON transactions;
+DROP TRIGGER IF EXISTS trg_05_inter_debit_ticket_purchase ON transactions;
+DROP TRIGGER IF EXISTS trg_06_inter_credit ON transactions;
+
+-- Create BEFORE triggers (execute in alphabetical order by trigger name)
+CREATE TRIGGER trg_01_intra_debit_client_to_regime
+    BEFORE INSERT OR UPDATE ON transactions
+    FOR EACH ROW
+    EXECUTE FUNCTION handle_intra_debit_client_to_regime();
+
+CREATE TRIGGER trg_02_intra_debit_client_to_client
+    BEFORE INSERT OR UPDATE ON transactions
+    FOR EACH ROW
+    EXECUTE FUNCTION handle_intra_debit_client_to_client();
+
+CREATE TRIGGER trg_03_intra_debit_regime_to_client
+    BEFORE INSERT OR UPDATE ON transactions
+    FOR EACH ROW
+    EXECUTE FUNCTION handle_intra_debit_regime_to_client();
+
+CREATE TRIGGER trg_04_inter_debit_withdrawal
+    BEFORE INSERT OR UPDATE ON transactions
+    FOR EACH ROW
+    EXECUTE FUNCTION handle_inter_debit_withdrawal();
+
+CREATE TRIGGER trg_05_inter_debit_ticket_purchase
+    BEFORE INSERT OR UPDATE ON transactions
+    FOR EACH ROW
+    EXECUTE FUNCTION handle_inter_debit_ticket_purchase();
+
+CREATE TRIGGER trg_06_inter_credit
+    BEFORE INSERT OR UPDATE ON transactions
+    FOR EACH ROW
+    EXECUTE FUNCTION handle_inter_credit();
+-- New transaction handling flow END
+
+```
+
+## Key Changes Based on Your Pattern
+
+1. **✅ Consistent defensive pattern**: `IF NEW.treated IS NOT TRUE AND NEW.status = 'success'`
+2. **✅ NULL-safe checks**: Uses `IS NOT TRUE` instead of `= FALSE` (handles NULL correctly)
+3. **✅ Specific conditionals**: Each trigger checks exact column combinations
+4. **✅ Works with webhook flow**: Triggers fire when webhook updates status to 'success'
+5. **✅ Better NULL handling**: Added `IS NOT NULL` checks before using affiliate/company amounts
+
+## How It Works With Your Webhook Flow
+
+1. API creates transaction with status='pending', treated=FALSE
+2. User pays via Paystack
+3. Webhook receives success event
+4. Webhook updates transaction: status='success' (still treated=FALSE)
+5. TRIGGER FIRES on UPDATE: sees treated=FALSE AND status='success'
+6. Trigger processes accounting, sets treated=TRUE
+7. Future webhook duplicates see treated=TRUE, skip processing ✅
+```
