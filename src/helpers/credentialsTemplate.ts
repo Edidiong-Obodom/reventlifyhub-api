@@ -75,7 +75,7 @@ export const mailHTMLBodyLayout = ({ subject, body }) => {
                 </tr>
                 <tr style="background-color: #f3f4f6;">
                   <td style="padding: 20px; text-align: center; color: #9ca3af; font-size: 12px;">
-                    &copy; 2025 Reventlify. All rights reserved.
+                    &copy; ${new Date().getFullYear()} Reventlify. All rights reserved.
                   </td>
                 </tr>
               </table>

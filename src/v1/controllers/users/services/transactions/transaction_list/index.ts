@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { pool } from "../../../../../../db";
+import * as Helpers from "../../../../../../helpers";
 
 /**
  * Fetches a paginated list of **client-visible transactions** for the authenticated user.
@@ -56,17 +57,22 @@ export const transactionList = async (req: Request, res: Response) => {
        ${whereClause}
        ORDER BY t.created_at DESC
        LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
-      [...params, limit, offset]
+      [...params, limit, offset],
     );
 
     const total = await pool.query(
       `SELECT COUNT(*) FROM transactions t ${whereClause}`,
-      params
+      params,
     );
+
+    // Get user details
+    const userDetailsQuery = await Helpers.getData("clients", "id", userId);
+    
 
     return res.status(200).json({
       message: "Transactions fetched successfully",
       data: result.rows,
+      balance: userDetailsQuery.rows[0].balance,
       page: Number(page),
       limit: Number(limit),
       total: Number(total.rows[0].count),
