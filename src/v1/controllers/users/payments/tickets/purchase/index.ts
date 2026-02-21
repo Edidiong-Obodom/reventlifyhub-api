@@ -12,119 +12,110 @@ import * as Helpers from "../../../../../../helpers";
  *
  * @param {TicketPurchase} params - Ticket purchase webhook parameters
  * @param {string} params.paymentStatus - Payment status from Paystack (success, failed, pending, processed)
- * @param {string} params.event - Paystack event type
- * @param {number} params.realAmount - Total amount paid (in base currency units)
- * @param {number} params.amount - Amount per ticket
- * @param {string} params.reference - Paystack transaction reference
  * @param {string} params.userId - ID of the user purchasing tickets
  * @param {string} params.regimeId - ID of the regime (event)
  * @param {string} params.pricingId - ID of the pricing tier
  * @param {string} params.affiliateId - Optional affiliate ID for commission tracking
  * @param {string} params.transactionId - Internal transaction ID
  * @param {number} params.numberOfTickets - Number of tickets being purchased
- * @param {string} [params.transactionType] - Type of transaction
  *
  * @returns {Promise<{status: number, message: string, error?: any}>} Processing result
  *
  * @race-condition-protection
- * - Acquires FOR UPDATE locks on both transactions and pricings rows concurrently (via Promise.all)
- *   to prevent duplicate webhook processing and seat overselling in a single round trip
- * - Validates seat availability after acquiring lock as a defensive measure
+ * - Uses FOR UPDATE NOWAIT on the transactions row — instantly rejects duplicate webhooks
+ *   that arrive while the first is still processing (Postgres error code 55P03)
+ * - Seat decrement uses a conditional UPDATE with AND available_seats >= $1, making the
+ *   row lock and availability check a single atomic operation with no explicit SELECT needed
  *
  * @idempotency
- * - Checks transaction status before processing
- * - Returns success immediately if already processed
+ * - Payload is validated before a pool client is checked out
+ * - Transaction row is locked and its status checked before any writes
+ * - Returns early if transaction is already fulfilled (success or failed)
  * - Transaction ID serves as idempotency key
  *
  * @performance
- * - Lock acquisition on transactions and pricings runs concurrently (Promise.all) — 2 locks, 1 round trip
- * - User and regime lookups run concurrently (Promise.all)
- * - All writes (ticket inserts, transaction update, seat decrement) run concurrently (Promise.all)
- * - Ticket inserts use a single bulk INSERT regardless of quantity — O(1) round trips instead of O(n)
- * - Total DB round trips: ~4, regardless of ticket quantity
+ * - Pool client is checked out only after early validation passes — invalid requests
+ *   never touch the connection pool
+ * - Single dedicated pool client used throughout — all queries are truly atomic under BEGIN/COMMIT
+ * - Ticket inserts use generate_series for a single bulk INSERT regardless of ticket count — O(1) round trips
+ * - Writes are sequential by design: tickets → seats → transaction status. This ordering ensures
+ *   the DB trigger (handle_inter_debit_ticket_purchase) fires only after tickets and seat counts
+ *   are already committed to the transaction snapshot it reads from
  * - Email is fire-and-forget after COMMIT to avoid blocking the response
+ * - Pool client is always released in a finally block to prevent connection leaks
  *
  * @example
  * const result = await ticket_purchase_paystackWebhook({
  *   paymentStatus: 'success',
- *   event: 'charge.success',
- *   realAmount: 15000,
- *   amount: 5000,
- *   reference: 'ref_12345',
  *   userId: 'user_abc',
  *   regimeId: 'regime_xyz',
  *   pricingId: 'pricing_123',
  *   affiliateId: 'affiliate_456',
  *   transactionId: 'txn_789',
  *   numberOfTickets: 3,
- *   transactionType: 'ticket-purchase'
  * });
  * // Returns: { status: 200, message: 'Ticket Purchase Successful' }
  */
 
 export const ticket_purchase_paystackWebhook = async ({
   paymentStatus,
-  event,
-  realAmount,
-  amount,
-  reference,
   userId,
   regimeId,
   pricingId,
   affiliateId,
   transactionId,
   numberOfTickets,
-  transactionType,
 }: TicketPurchase): Promise<{
   status: number;
   message: string;
   error?: any;
 }> => {
-  // ✅ Check out a single dedicated client from the pool
-  // ALL queries must go through this client to stay within the same transaction
+  const count = Number(numberOfTickets || 0);
+  const normalizedStatus = String(paymentStatus || "").toLowerCase();
+
+  // Early validation before opening a transaction
+  const validStatuses = ["success", "failed", "pending", "processed"];
+  if (!validStatuses.includes(normalizedStatus)) {
+    return { status: 400, message: "Invalid payment status from Paystack." };
+  }
+  if (normalizedStatus === "pending") {
+    return { status: 200, message: "Transaction pending..." };
+  }
+  if (!transactionId || !pricingId || !regimeId || !userId || count <= 0) {
+    return { status: 400, message: "Invalid payload." };
+  }
   const client = await pool.connect();
 
   try {
     await client.query("BEGIN");
 
-    // 🔒 Acquire both locks concurrently — safe because they're on different tables
-    const [transactionLock, pricingLock] = await Promise.all([
-      client.query(
-        `SELECT id, status FROM transactions WHERE id = $1 FOR UPDATE`,
+    // 1) Lock transaction row (idempotency check)
+    let txRes;
+    try {
+      txRes = await client.query(
+        `SELECT id, status FROM transactions WHERE id = $1 FOR UPDATE NOWAIT`,
         [transactionId],
-      ),
-      client.query(
-        `SELECT id, available_seats, name FROM pricings WHERE id = $1 FOR UPDATE`,
-        [pricingId],
-      ),
-    ]);
+      );
+    } catch (e: any) {
+      if (e?.code === "55P03") {
+        await client.query("ROLLBACK");
+        return { status: 200, message: "Transaction already processing." };
+      }
+      throw e;
+    }
 
-    if (transactionLock.rows.length === 0) {
+    if (txRes.rows.length === 0) {
       await client.query("ROLLBACK");
       return { status: 404, message: "Transaction not found" };
     }
 
-    const currentStatus = transactionLock.rows[0].status;
+    const currentStatus = txRes.rows[0].status;
     if (currentStatus === "success" || currentStatus === "failed") {
       await client.query("ROLLBACK");
-      return {
-        status: 200,
-        message: `Transaction already fulfilled with status: ${currentStatus}`,
-      };
+      return { status: 200, message: `Already fulfilled: ${currentStatus}` };
     }
 
-    const normalizedStatus = paymentStatus.toLowerCase();
-    const validStatuses = ["success", "failed", "pending", "processed"];
-    if (!validStatuses.includes(normalizedStatus)) {
-      await client.query("ROLLBACK");
-      return { status: 400, message: "Invalid payment status from Paystack." };
-    }
-
-    if (normalizedStatus === "pending") {
-      await client.query("ROLLBACK");
-      return { status: 400, message: "Transaction pending..." };
-    }
-
+    // 2) Finalize failed payment
     if (normalizedStatus === "failed") {
       await client.query(
         `UPDATE transactions SET status = 'failed', modified_at = CURRENT_TIMESTAMP WHERE id = $1`,
@@ -134,15 +125,17 @@ export const ticket_purchase_paystackWebhook = async ({
       return { status: 200, message: "Transaction failed" };
     }
 
-    if (pricingLock.rows.length === 0) {
-      await client.query("ROLLBACK");
-      return { status: 404, message: "Pricing not found" };
-    }
+    // 3) Atomically decrement seats — the UPDATE itself acts as the lock + availability check
+    const pricingRes = await client.query(
+      `UPDATE pricings
+          SET available_seats = available_seats - $1
+        WHERE id = $2
+          AND available_seats >= $1
+        RETURNING name`,
+      [count, pricingId],
+    );
 
-    const { available_seats: availableSeats, name: pricingName } =
-      pricingLock.rows[0];
-
-    if (availableSeats < Number(numberOfTickets)) {
+    if (pricingRes.rows.length === 0) {
       await client.query(
         `UPDATE transactions SET status = 'failed', modified_at = CURRENT_TIMESTAMP WHERE id = $1`,
         [transactionId],
@@ -150,58 +143,54 @@ export const ticket_purchase_paystackWebhook = async ({
       await client.query("COMMIT");
       return {
         status: 400,
-        message: `Insufficient seats. Available: ${availableSeats}, Requested: ${numberOfTickets}`,
+        message: "Insufficient seats or pricing not found.",
       };
     }
 
-    // Fetch user + regime concurrently — these are read-only and don't need to be
-    // on the transaction client, so pool.query is fine here
-    const [clientDetails, regimeDetails] = await Promise.all([
-      Helpers.findUserById(userId),
-      Helpers.getData("regimes", "id", regimeId),
-    ]);
+    const { name: pricingName } = pricingRes.rows[0];
 
-    if (clientDetails.rows.length === 0) {
+    // 4) Fetch user + regime — sequential on the same client (parallel here is illusory
+    //    since a single pg client processes queries serially anyway)
+    const userRes = await client.query(
+      `SELECT user_name, email FROM clients WHERE id = $1`,
+      [userId],
+    );
+    const regimeRes = await client.query(
+      `SELECT name FROM regimes WHERE id = $1`,
+      [regimeId],
+    );
+
+    if (userRes.rows.length === 0) {
       await client.query("ROLLBACK");
       return { status: 404, message: "User not found" };
     }
-    if (regimeDetails.rows.length === 0) {
+    if (regimeRes.rows.length === 0) {
       await client.query("ROLLBACK");
       return { status: 404, message: "Regime not found" };
     }
 
-    const { user_name, email } = clientDetails.rows[0];
-    const { name: regimeName } = regimeDetails.rows[0];
-    const count = Number(numberOfTickets);
+    const { user_name, email } = userRes.rows[0];
+    const { name: regimeName } = regimeRes.rows[0];
 
-    // ⚡ Bulk insert all tickets in ONE query
-    const affiliateCols = affiliateId ? ", affiliate_id" : "";
-    const ticketValues = Array.from({ length: count }, (_, i) => {
-      const base = i * (affiliateId ? 6 : 5);
-      return affiliateId
-        ? `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6})`
-        : `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`;
-    }).join(", ");
-
-    const ticketParams: any[] = [];
-    for (let i = 0; i < count; i++) {
-      ticketParams.push(pricingId, transactionId, userId, userId, "active");
-      if (affiliateId) ticketParams.push(affiliateId);
+    // 5) Bulk insert tickets via generate_series — one query regardless of count
+    if (affiliateId) {
+      await client.query(
+        `INSERT INTO tickets (pricing_id, transaction_id, buyer_id, owner_id, status, affiliate_id)
+         SELECT $1, $2, $3, $3, 'active', $4
+           FROM generate_series(1, $5)`,
+        [pricingId, transactionId, userId, affiliateId, count],
+      );
+    } else {
+      await client.query(
+        `INSERT INTO tickets (pricing_id, transaction_id, buyer_id, owner_id, status)
+         SELECT $1, $2, $3, $3, 'active'
+           FROM generate_series(1, $4)`,
+        [pricingId, transactionId, userId, count],
+      );
     }
 
-    // ✅ All three writes go through the SAME client — properly inside the transaction
-    // Note: these must be sequential, not Promise.all, because the DB trigger on the
-    // transactions UPDATE will try to read tickets and pricing that must already exist
-    await client.query(
-      `INSERT INTO tickets (pricing_id, transaction_id, buyer_id, owner_id, status${affiliateCols}) VALUES ${ticketValues}`,
-      ticketParams,
-    );
-    await client.query(
-      `UPDATE pricings SET available_seats = available_seats - $1 WHERE id = $2`,
-      [count, pricingId],
-    );
-    // 🔑 Do this LAST — your DB trigger fires on this UPDATE and expects tickets + seats
-    // to already reflect the new state within the same transaction
+    // 6) LAST: mark success — DB trigger fires here and expects tickets + seats
+    //    to already be updated within this transaction snapshot
     await client.query(
       `UPDATE transactions SET status = 'success', modified_at = CURRENT_TIMESTAMP WHERE id = $1`,
       [transactionId],
@@ -209,7 +198,7 @@ export const ticket_purchase_paystackWebhook = async ({
 
     await client.query("COMMIT");
 
-    // 📧 Fire-and-forget email after commit
+    // Fire-and-forget email after commit — failure here doesn't affect fulfillment
     Helpers.sendMail({
       email,
       subject: "Ticket Purchase Successful",
@@ -218,20 +207,20 @@ export const ticket_purchase_paystackWebhook = async ({
         subject: "Ticket Purchase Successful",
         body: `
           <h3 style="color: #111827;">Hello ${user_name},</h3>
-          <p style="color: #374151;">You have successfully purchased ${count} ${pricingName} ticket(s) for <strong>${regimeName}</strong>.</p>
+          <p style="color: #374151;">
+            You have successfully purchased ${count} ${pricingName} ticket(s) for <strong>${regimeName}</strong>.
+          </p>
           <p style="margin-top: 30px; color: #6b7280;">Best regards,<br />The Reventlify Team</p>`,
       }),
-    }).catch((err) =>
-      console.error("Email failed for transaction:", transactionId, err),
-    );
+    }).catch((err) => console.error("Email failed:", transactionId, err));
 
     return { status: 200, message: "Ticket Purchase Successful" };
-  } catch (error) {
-    console.error("Webhook error:", transactionId, error.message);
-    await client.query("ROLLBACK");
-    return { status: 500, message: error.message, error };
+  } catch (error: any) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {}
+    return { status: 500, message: error?.message || "Webhook error", error };
   } finally {
-    // ✅ Always release the client back to the pool, even if an error occurs
     client.release();
   }
 };
