@@ -25,6 +25,15 @@ import {
   ticketPurchase,
   ticketSearch,
   ticketTransfer,
+  dashboardTicketPerformance,
+  dashboardParticipantsList,
+  dashboardParticipantsCreate,
+  dashboardParticipantsUpdate,
+  dashboardParticipantsDelete,
+  dashboardTransactions,
+  dashboardAttendanceList,
+  dashboardAttendanceSearch,
+  dashboardAttendanceAction,
 } from "../controllers/users/usersController";
 import { paystackWebhook } from "../controllers/users/payments";
 import { allRateLimiter } from "../../utilities/rate-limit/all-rate-limit";
@@ -79,6 +88,73 @@ router.get("/regime/view/popular", auditMiddleware(), byPopularity);
 // ========== View regimes ==========
 
 // ========== Profile ==========
+
+// ========== Dashboard ==========
+router.get(
+  "/dashboard/ticket-performance",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  dashboardTicketPerformance
+);
+router.get(
+  "/dashboard/participants",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  dashboardParticipantsList
+);
+router.post(
+  "/dashboard/participants",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  dashboardParticipantsCreate
+);
+router.patch(
+  "/dashboard/participants",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  dashboardParticipantsUpdate
+);
+router.delete(
+  "/dashboard/participants",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  dashboardParticipantsDelete
+);
+router.get(
+  "/dashboard/transactions",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  dashboardTransactions
+);
+router.get(
+  "/dashboard/attendance/list",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  dashboardAttendanceList
+);
+router.get(
+  "/dashboard/attendance/search",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  dashboardAttendanceSearch
+);
+router.post(
+  "/dashboard/attendance/action",
+  authenticateToken,
+  allRateLimiter,
+  auditMiddleware(),
+  dashboardAttendanceAction
+);
+// ========== Dashboard ==========
+
 router.get(
   "/profile",
   authenticateToken,

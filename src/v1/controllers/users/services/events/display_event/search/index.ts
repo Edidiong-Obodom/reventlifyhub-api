@@ -46,6 +46,7 @@ export const searchEvents = async (req: Request, res: Response) => {
           r.start_time,
           r.end_date,
           r.end_time,
+          r.balance,
           r.media AS regime_banner,
           ARRAY_REMOVE(ARRAY[r.media_i, r.media_ii, r.media_iii, r.media_iv], NULL) AS regime_gallery,
           (
@@ -81,7 +82,7 @@ export const searchEvents = async (req: Request, res: Response) => {
       LEFT JOIN pricings p ON r.id = p.regime_id
       LEFT JOIN tickets t ON p.id = t.pricing_id
       WHERE (r.status = 'pending' OR r.status = 'ongoing')
-        AND (r.end_date + r.end_time)::timestamp > CURRENT_TIMESTAMP
+        -- AND (r.end_date + r.end_time)::timestamp > CURRENT_TIMESTAMP
         AND (
           r.id = $1 OR
           r.name ILIKE $2 OR
