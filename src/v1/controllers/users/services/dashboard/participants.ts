@@ -222,15 +222,37 @@ export const dashboardParticipantsList = async (
     }
 
     if (!access.role || !VIEWABLE_ROLES.includes(access.role)) {
+      const resolvedRole = access.role;
       setAudit(
         req,
         "Dashboard participants list",
-        "failed: forbidden role for participants list",
+        `failed: forbidden role for participants list (${resolvedRole})`,
       );
       return res
         .status(403)
         .json({
           message: "You do not have access to view regime participants.",
+          data: {
+            regimeId,
+            currentUserRole: resolvedRole,
+            permissions: {
+              canManageParticipants: resolvedRole
+                ? MANAGER_ROLES.includes(resolvedRole)
+                : false,
+              assignableRoles: resolvedRole ? MANAGEABLE_BY_ROLE[resolvedRole] : [],
+            },
+            summary: {
+              total: 0,
+              byRole: {
+                super_admin: 0,
+                admin: 0,
+                usher: 0,
+                bouncer: 0,
+                marketer: 0,
+              },
+            },
+            participants: [],
+          },
         });
     }
 
