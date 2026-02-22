@@ -76,11 +76,11 @@ const sendVerificationCode = async (req: Request, res: Response) => {
     // checks if username already exists
     const user_name = await pool.query(
       "SELECT * FROM clients WHERE user_name = $1",
-      [email]
+      [email],
     );
     const user_name_limbo = await pool.query(
       "SELECT * FROM limbo WHERE user_name = $1",
-      [email]
+      [email],
     );
 
     // action if username already exists
@@ -97,8 +97,8 @@ const sendVerificationCode = async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await pool.query(
-      "INSERT INTO limbo(email, code, status, password, user_name) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [email, emailVCode, "pending", hashedPassword, userName]
+      "INSERT INTO limbo(email, code, status, password, user_name, first_name) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+      [email, emailVCode, "pending", hashedPassword, userName, userName],
     );
 
     //sends verification code to clients mail
@@ -239,7 +239,7 @@ const register = async (req: Request, res: Response) => {
         INSERT INTO clients(
           email, password, user_name
           ) VALUES($1, $2, $3) RETURNING *`,
-      [email, code.rows[0].password, code.rows[0].user_name]
+      [email, code.rows[0].password, code.rows[0].user_name],
     );
 
     // deletes client from limbo

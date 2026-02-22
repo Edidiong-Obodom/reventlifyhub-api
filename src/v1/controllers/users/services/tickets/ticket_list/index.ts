@@ -23,7 +23,7 @@ export const ticketList = async (req: Request, res: Response) => {
 
     if (startDate && endDate) {
       filters.push(
-        `t.created_at BETWEEN $${values.length + 1} AND $${values.length + 2}`
+        `t.created_at BETWEEN $${values.length + 1} AND $${values.length + 2}`,
       );
       values.push(startDate, endDate);
     }
@@ -54,6 +54,7 @@ export const ticketList = async (req: Request, res: Response) => {
         r.start_time,
         r.end_time,
         c.id AS creator_id,
+        c.email AS creator_email,
         c.user_name AS creator_user_name
       FROM tickets t
       JOIN pricings p ON t.pricing_id = p.id
@@ -98,6 +99,7 @@ export const ticketList = async (req: Request, res: Response) => {
           creator: {
             id: row.creator_id,
             user_name: row.creator_user_name,
+            email: row.creator_email,
           },
         },
       },

@@ -413,10 +413,11 @@ export const unfollowUser = async (req: Request, res: Response) => {
   }
 };
 
+
 export const getRegimesByCreator = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { page = "1", limit = "20" } = req.query;
+    const { page = "1", limit = "20", participant = "false" } = req.query;
 
     if (isNaN(Number(page)) || isNaN(Number(limit))) {
       return res.status(400).json({
@@ -425,6 +426,14 @@ export const getRegimesByCreator = async (req: Request, res: Response) => {
       });
     }
 
+    if (!["true", "false"].includes(String(participant))) {
+      return res.status(400).json({
+        success: false,
+        message: 'participant must be either "true" or "false".',
+      });
+    }
+
+    const isParticipant = String(participant) === "true";
     const offset = (Number(page) - 1) * Number(limit);
     const values: any[] = [id, Number(limit), offset];
 
@@ -436,6 +445,7 @@ export const getRegimesByCreator = async (req: Request, res: Response) => {
           r.creator_id,
           c.user_name AS creator_user_name,
           c.photo AS creator_photo,
+          ${isParticipant ? "rp.participant_role" : "NULL::text"} AS participant_role,
           r.address,
           r.city,
           r.state,
@@ -465,9 +475,13 @@ export const getRegimesByCreator = async (req: Request, res: Response) => {
       JOIN clients c ON r.creator_id = c.id
       LEFT JOIN pricings p ON r.id = p.regime_id
       LEFT JOIN tickets t ON p.id = t.pricing_id
-      WHERE r.creator_id = $1
-        AND r.is_deleted = false
-      GROUP BY r.id, c.id
+      ${
+        isParticipant
+          ? "JOIN regime_participant rp ON rp.regime_id = r.id AND rp.participant_id = $1 AND rp.is_deleted = false AND LOWER(rp.participant_role) != 'creator'"
+          : ""
+      }
+      WHERE ${isParticipant ? "r.is_deleted = false" : "r.creator_id = $1 AND r.is_deleted = false"}
+      GROUP BY r.id, c.id${isParticipant ? ", rp.participant_role" : ""}
       ORDER BY r.created_at DESC
       LIMIT $2 OFFSET $3;
     `;
